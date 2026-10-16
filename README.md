@@ -94,7 +94,7 @@ npm run dev
 # Backend pytest suite (54 tests)
 python -m pytest -v tests/test_backend.py
 
-# Frontend integration tests (204 assertions across 5 suites)
+# Frontend integration tests (238 assertions across 5 suites)
 node tests/test_frontend_incidents.js
 node tests/test_frontend_costs.js
 node tests/test_frontend_weather_clock.js
@@ -118,7 +118,7 @@ On every push, pull request targeting `main`, or manual trigger (`workflow_dispa
 - **Frontend Cloud Costs Suite:** Executes `node tests/test_frontend_costs.js` (32 assertions verifying spend cards, utilization thresholds, steppers/presets, zero-budget safety, and backend disconnects).
 - **Frontend Weather & Clock Suite:** Executes `node tests/test_frontend_weather_clock.js` (33 assertions verifying digital clock formatting, timer cleanup, SIM labels, unit toggle, and offline fallback).
 - **Frontend Focus Timer Suite:** Executes `node tests/test_frontend_focus_timer.js` (61 assertions verifying deadline precision, start/pause/resume/reset/skip, discard confirmation modal, session transitions, audio mute, and localStorage recovery).
-- **Frontend Embedded Simulator Suite:** Executes `node tests/test_embedded_simulator.js` (51 assertions verifying 8-screen cyclic navigation, cleanup lifecycle, XPT2046 touch digitizer clamping, power/sleep/wake, and offline independence).
+- **Frontend Embedded Simulator Suite:** Executes `node tests/test_embedded_simulator.js` (85 assertions verifying 8-screen cyclic navigation, cleanup lifecycle, XPT2046 touch digitizer clamping, power/sleep/wake, live Flask API contract validation across all 11 endpoints, and offline independence).
 - **Production Bundle Build:** Executes `npm run build --prefix frontend` (Vite) ensuring 100% of modules transform and compile both `index.html` and `simulator.html` with zero syntax errors or broken imports.
 
 ### 2. How to Push to GitHub & Trigger the Workflow

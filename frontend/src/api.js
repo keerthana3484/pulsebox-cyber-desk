@@ -158,3 +158,42 @@ export async function getWeather() {
   return await res.json();
 }
 
+/**
+ * POST /reset
+ * Resets simulated cluster, clears incident history, restores default cost budget,
+ * and resets weather provider.
+ */
+export async function resetBackend() {
+  const res = await fetchWithTimeout(`${API_BASE}/reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || `Failed to reset backend: HTTP ${res.status}`);
+  }
+  return data;
+}
+
+/**
+ * POST /record-health-check
+ * Records an individual health-check result for a simulated server.
+ * Used to test consecutive-failure thresholds without waiting for real infrastructure.
+ * @param {string} serverId - Server ID (e.g. "srv-api")
+ * @param {"failed"|"online"} [status="failed"] - Health check outcome
+ */
+export async function recordHealthCheck(serverId, status = "failed") {
+  const res = await fetchWithTimeout(`${API_BASE}/record-health-check`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ server_id: serverId, status }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || `Failed to record health check: HTTP ${res.status}`);
+  }
+  return data;
+}
+
+

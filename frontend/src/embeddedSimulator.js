@@ -23,6 +23,8 @@ import {
   getCostSettings,
   updateCostBudget,
   getWeather,
+  resetBackend,
+  recordHealthCheck,
 } from "./api.js";
 
 // Screen Renderers
@@ -143,6 +145,8 @@ export class EmbeddedScreenSimulator {
         getCostSettings,
         updateCostBudget,
         getWeather,
+        resetBackend,
+        recordHealthCheck,
       },
       refreshBackendState: () => this.refreshBackendState(),
       onStateChange: (fn) => this.subscribeStateChange(fn),
@@ -477,11 +481,20 @@ export class EmbeddedScreenSimulator {
     setSoundEnabled(settings.soundEnabled);
   }
 
-  resetToDefaults() {
+  async resetToDefaults() {
     this.state = createMockState();
     this.applySettings();
     this.switchScreen(0);
     this.log("[RESET] Device reset to default state.");
+    if (this.state.backendConnected) {
+      try {
+        await resetBackend();
+        await this.refreshBackendState();
+        this.log("[RESET] Flask backend cluster state, incidents, budget, and weather reset to defaults.");
+      } catch (err) {
+        this.log(`[RESET_WARN] Backend reset error: ${err.message}`);
+      }
+    }
   }
 
   toggleSound(enabled) {

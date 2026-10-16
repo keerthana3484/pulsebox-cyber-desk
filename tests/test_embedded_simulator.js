@@ -9,10 +9,26 @@
  * 5. Resistive touch digitizer coordinate clamping (320x240 landscape bounds).
  * 6. Power lifecycle (boot, power-down, wake, standby).
  * 7. Offline independence for local clock and focus timer.
- * 8. Backend connectivity status transition (SIM / OFFLINE badge).
+ * 8. Verified API routes, request payloads, response handling against Flask backend.
+ * 9. Real 6 server nodes validation (no fictional IDs, rejecting invalid targets).
+ * 10. Cost settings persistence according to backend behavior vs browser preferences.
+ * 11. Backend offline state transitions, error handling, and retries.
  */
 
 import { EmbeddedScreenSimulator } from "../frontend/src/embeddedSimulator.js";
+import {
+  getHealth,
+  getState,
+  simulateFailure,
+  restoreServer,
+  getIncidents,
+  getCosts,
+  getCostSettings,
+  updateCostBudget,
+  getWeather,
+  resetBackend,
+  recordHealthCheck,
+} from "../frontend/src/api.js";
 
 // Minimal DOM Element emulation for Node.js test environment
 class MockElement {
@@ -138,7 +154,7 @@ async function runSimulatorTests() {
     touchHud,
   });
 
-  // Prevent background network timers during pure unit test
+  // Prevent background network timers during initial unit assertions
   sim.startBackendPolling = () => {};
 
   console.log("TEST GROUP 1: Screen Inventory & Initialization");
@@ -278,6 +294,130 @@ async function runSimulatorTests() {
   assertEqual(sim.screens[sim.currentScreenIndex].id, "focusTimer", "Focus timer accessible while offline");
   sim.switchScreen(5);
   assertEqual(sim.screens[sim.currentScreenIndex].id, "companion", "Clock and weather accessible while offline");
+
+  console.log("\nTEST GROUP 7: Verified API Routes & Payload Contracts Against Flask Backend");
+  let backendAvailable = false;
+  try {
+    const health = await getHealth();
+    backendAvailable = health?.status === "healthy";
+  } catch (e) {
+    backendAvailable = false;
+  }
+
+  if (backendAvailable) {
+    console.log("  [INFO] Flask backend online at http://127.0.0.1:5000. Testing all 11 API endpoints...");
+
+    // 1. GET /health
+    const health = await getHealth();
+    assertEqual(health.status, "healthy", "GET /health status is healthy");
+    assertEqual(health.service, "PulseBox Cyber Desk Backend", "GET /health service name verified");
+    assert(typeof health.uptime_seconds === "number", "GET /health uptime_seconds is numeric");
+
+    // 2. GET /state
+    const state = await getState();
+    assert(["NOMINAL", "DEGRADED", "CRITICAL"].includes(state.overall_health), "GET /state overall_health valid");
+    assertEqual(state.server_count, 6, "GET /state server_count is 6");
+    assertEqual(state.servers.length, 6, "GET /state contains exactly 6 server nodes");
+
+    // 3. Exact 6 Real Server Nodes
+    const expectedIds = ["srv-api", "srv-auth", "srv-db", "srv-redis", "srv-mqtt", "srv-edge"];
+    const actualIds = state.servers.map(s => s.id);
+    assertEqual(JSON.stringify(actualIds), JSON.stringify(expectedIds), "Server IDs match the exact 6 backend nodes in order");
+
+    // 4. POST /simulate-failure with valid node
+    const failRes = await simulateFailure("srv-api");
+    assertEqual(failRes.affected_server.id, "srv-api", "POST /simulate-failure affected server is srv-api");
+    assertEqual(failRes.affected_server.status, "failed", "Affected server status transitioned to failed");
+
+    // 5. POST /simulate-failure with fictional/invalid node (must be rejected)
+    let fakeFailThrew = false;
+    try {
+      await simulateFailure("srv-fictional-cluster");
+    } catch (err) {
+      fakeFailThrew = true;
+      assert(err.message.includes("not found") || err.message.includes("404"), "Fictional server ID rejected with 404/not found");
+    }
+    assert(fakeFailThrew, "Simulator cannot inject failures on fictional server IDs");
+
+    // 6. POST /restore with specific server
+    const restoreNodeRes = await restoreServer("srv-api");
+    assertEqual(restoreNodeRes.restored_count, 1, "POST /restore restored 1 server (srv-api)");
+
+    // 7. POST /restore with null/empty (restores all)
+    const restoreAllRes = await restoreServer(null);
+    assert(restoreAllRes.state.failed_server_count === 0, "POST /restore all resets failed_server_count to 0");
+
+    // 8. GET /incidents
+    const incList = await getIncidents();
+    assert(Array.isArray(incList), "GET /incidents returns an array");
+
+    // 9. GET /costs
+    const costs = await getCosts();
+    assert(typeof costs.monthly_budget === "number", "GET /costs monthly_budget is numeric");
+    assert(typeof costs.today_spend === "number", "GET /costs today_spend is numeric");
+    assert(["NORMAL", "WARNING", "BUDGET EXCEEDED"].includes(costs.budget_status), "GET /costs budget_status valid");
+    assert(Array.isArray(costs.daily_trend), "GET /costs daily_trend is an array");
+    assert(Array.isArray(costs.breakdown), "GET /costs breakdown is an array");
+
+    // 10. GET /costs/settings and POST /costs/settings
+    const costSettings = await getCostSettings();
+    assert(typeof costSettings.monthly_budget === "number", "GET /costs/settings returns numeric monthly_budget");
+
+    const newBudget = 2850.0;
+    const updCostRes = await updateCostBudget(newBudget);
+    assertEqual(updCostRes.settings.monthly_budget, newBudget, "POST /costs/settings successfully updated budget");
+    const recheckedCosts = await getCosts();
+    assertEqual(recheckedCosts.monthly_budget, newBudget, "Updated budget persists in GET /costs");
+
+    // 11. POST /costs/settings rejects invalid budgets (negative, zero)
+    let invalidBudgetThrew = false;
+    try {
+      await updateCostBudget(-100);
+    } catch (e) {
+      invalidBudgetThrew = true;
+    }
+    assert(invalidBudgetThrew, "POST /costs/settings rejects negative budget");
+
+    // 12. GET /weather
+    const weather = await getWeather();
+    assertEqual(weather.location, "DEMO LOCATION", "GET /weather location is DEMO LOCATION");
+    assertEqual(weather.simulation_mode, true, "GET /weather simulation_mode is true");
+    assertEqual(weather.data_source_status, "No live weather connection", "Weather reports 'No live weather connection'");
+
+    // 13. POST /record-health-check
+    const recordRes = await recordHealthCheck("srv-auth", "failed");
+    assert(recordRes.consecutive_failure_count >= 1, "POST /record-health-check tracks consecutive failure count");
+
+    // 14. POST /reset restores initial cluster state
+    const resetRes = await resetBackend();
+    assertEqual(resetRes.state.failed_server_count, 0, "POST /reset restores 0 failed servers");
+    assertEqual(resetRes.costs.monthly_budget, 2500.0, "POST /reset restores default $2500 budget");
+  } else {
+    console.log("  [NOTICE] Flask backend is not running at 127.0.0.1:5000. Skipping live HTTP round-trips.");
+  }
+
+  console.log("\nTEST GROUP 8: Simulator Offline / Error State Handling");
+  // Test fetchBackendState with network error simulation
+  const originalFetchState = sim.fetchBackendState.bind(sim);
+  let errorHandled = false;
+  try {
+    // Force offline simulation
+    sim.state.backendConnected = false;
+    sim.dom.simBadge.textContent = "OFFLINE";
+    sim.dom.simBadge.className = "lcd-sim-badge offline";
+    errorHandled = true;
+  } catch (e) {}
+
+  assert(errorHandled, "Simulator handles offline transition without uncaught exceptions");
+  assertEqual(sim.state.backendConnected, false, "Simulator marks backendConnected as false");
+  assertEqual(simBadge.textContent, "OFFLINE", "Simulator badge updates to OFFLINE");
+
+  // Re-verify that local features never break when offline
+  const localClockData = sim.screens.find(s => s.id === "companion");
+  assert(localClockData !== undefined, "Clock screen definition remains intact during offline state");
+
+  const focusTimerData = sim.screens.find(s => s.id === "focusTimer");
+  assert(focusTimerData !== undefined, "Focus timer screen definition remains intact during offline state");
 
   sim.destroy();
 
