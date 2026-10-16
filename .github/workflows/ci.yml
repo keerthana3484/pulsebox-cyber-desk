@@ -33,6 +33,18 @@ jobs:
       - name: Run backend pytest suite
         run: python -m pytest -v tests/test_backend.py
 
+      - name: Start Flask backend for integration tests
+        run: |
+          PYTHONPATH=backend python backend/app.py &
+          for i in $(seq 1 30); do
+            if curl -s http://127.0.0.1:5000/health > /dev/null; then
+              echo "Flask backend is up and running!"
+              break
+            fi
+            echo "Waiting for Flask backend..."
+            sleep 1
+          done
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
