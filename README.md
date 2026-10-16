@@ -81,25 +81,27 @@ python app.py
 *(Default: `http://127.0.0.1:5000` localhost only. For optional local-network access when testing with an ESP32 on the same trusted Wi-Fi, run `$env:HOST="0.0.0.0"; python app.py`)*
 
 
-### 2. Run the Frontend Simulator
+### 2. Run the Frontend Applications
 ```powershell
 cd frontend
 npm run dev
 ```
-*(Simulator runs on `http://localhost:5173`)*
+- **Workbench View (Full Cyber Desk Chassis):** `http://localhost:5173/`
+- **Dedicated 320×240 Embedded Screen Simulator:** `http://localhost:5173/simulator.html`
 
 ### 3. Run Automated Tests
 ```powershell
-# Backend pytest suite (48 tests)
+# Backend pytest suite (54 tests)
 python -m pytest -v tests/test_backend.py
 
-# Frontend integration tests (153 assertions across 4 suites)
+# Frontend integration tests (204 assertions across 5 suites)
 node tests/test_frontend_incidents.js
 node tests/test_frontend_costs.js
 node tests/test_frontend_weather_clock.js
 node tests/test_frontend_focus_timer.js
+node tests/test_embedded_simulator.js
 
-# Frontend production build
+# Frontend multi-page production build
 npm run build --prefix frontend
 ```
 
@@ -111,12 +113,13 @@ The repository includes an automated GitHub Actions CI workflow configured in [`
 
 ### 1. What GitHub Actions Checks
 On every push, pull request targeting `main`, or manual trigger (`workflow_dispatch`), GitHub Actions runs on `ubuntu-latest` and verifies:
-- **Backend Test Suite:** Executes `python -m pytest -v tests/test_backend.py` covering all 48 tests (endpoints, health thresholds, failure streaks, restore validation, Telegram mock notifications, cost tracking, weather telemetry, reset isolation).
+- **Backend Test Suite:** Executes `python -m pytest -v tests/test_backend.py` covering all 54 tests (endpoints, health thresholds, failure streaks, restore validation, Telegram mock notifications, cost tracking, weather telemetry, reset isolation, configurable host/port, strict CORS).
 - **Frontend Incidents Suite:** Executes `node tests/test_frontend_incidents.js` (27 assertions verifying nominal, outage, resolved, ordering, and offline states).
 - **Frontend Cloud Costs Suite:** Executes `node tests/test_frontend_costs.js` (32 assertions verifying spend cards, utilization thresholds, steppers/presets, zero-budget safety, and backend disconnects).
 - **Frontend Weather & Clock Suite:** Executes `node tests/test_frontend_weather_clock.js` (33 assertions verifying digital clock formatting, timer cleanup, SIM labels, unit toggle, and offline fallback).
 - **Frontend Focus Timer Suite:** Executes `node tests/test_frontend_focus_timer.js` (61 assertions verifying deadline precision, start/pause/resume/reset/skip, discard confirmation modal, session transitions, audio mute, and localStorage recovery).
-- **Production Bundle Build:** Executes `npm run build --prefix frontend` (Vite) ensuring 100% of modules transform and build with zero syntax errors or broken imports.
+- **Frontend Embedded Simulator Suite:** Executes `node tests/test_embedded_simulator.js` (51 assertions verifying 8-screen cyclic navigation, cleanup lifecycle, XPT2046 touch digitizer clamping, power/sleep/wake, and offline independence).
+- **Production Bundle Build:** Executes `npm run build --prefix frontend` (Vite) ensuring 100% of modules transform and compile both `index.html` and `simulator.html` with zero syntax errors or broken imports.
 
 ### 2. How to Push to GitHub & Trigger the Workflow
 If your local directory is not yet connected to a remote GitHub repository, initialize and push with:

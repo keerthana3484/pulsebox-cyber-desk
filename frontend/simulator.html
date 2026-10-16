@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PulseBox Cyber Desk — 320×240 Embedded Screen Simulator</title>
+  <meta name="description" content="Dedicated standalone 320x240 landscape embedded screen simulator for the ESP32 + 2.8-inch SPI touchscreen hardware fixture.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="stylesheet" href="/src/simulatorStyle.css">
+</head>
+<body class="standalone-sim-body" data-theme="amber-orange">
+  <!-- Top Simulator Toolbar -->
+  <header class="sim-top-toolbar">
+    <div class="sim-toolbar-left">
+      <a href="/index.html" class="sim-back-link" title="Return to Full Cyber Desk Workbench">
+        <span>◀</span> WORKBENCH VIEW
+      </a>
+      <div class="sim-title-badge">
+        <span class="sim-status-dot"></span>
+        <span>2.8" SPI TFT TOUCHSCREEN SIMULATOR</span>
+      </div>
+    </div>
+
+    <!-- Simulator Controls -->
+    <div class="sim-toolbar-tools">
+      <div class="sim-scale-group">
+        <span class="sim-scale-label">ZOOM:</span>
+        <button class="sim-tool-btn scale-btn" data-scale="1x">1X</button>
+        <button class="sim-tool-btn scale-btn" data-scale="fit">FIT</button>
+        <button class="sim-tool-btn scale-btn active" data-scale="1-5x">1.5X</button>
+        <button class="sim-tool-btn scale-btn" data-scale="2x">2X</button>
+      </div>
+
+      <button class="sim-tool-btn active" id="sim-crt-toggle" title="Toggle CRT Scanline Overlay">CRT ON</button>
+      <button class="sim-tool-btn active" id="sim-hud-toggle" title="Toggle Touch HUD Coordinates">HUD ON</button>
+      <button class="sim-tool-btn active" id="sim-sound-toggle" title="Toggle Audio Chimes">🔊 SFX ON</button>
+    </div>
+  </header>
+
+  <!-- Central Display Simulator Stage -->
+  <main class="sim-stage-container">
+    <div class="sim-display-wrapper scale-1-5x" id="sim-display-wrapper">
+      <!-- Industrial 2.8" Bezel Fixture -->
+      <div class="sim-hardware-bezel">
+        <!-- Top Bezel Label & LEDs -->
+        <div class="sim-bezel-top-bar">
+          <span class="sim-bezel-engraving">PULSEBOX // ESP32-S3 // ILI9341 320x240</span>
+          <div class="sim-bezel-leds">
+            <div class="sim-bezel-led">
+              <span class="sim-bezel-led-lens pwr" id="sim-led-pwr" title="3.3V Power Rail"></span>
+              <span class="sim-bezel-led-label">PWR</span>
+            </div>
+            <div class="sim-bezel-led">
+              <span class="sim-bezel-led-lens wifi" id="sim-led-rxtx" title="SPI Bus / API Sync"></span>
+              <span class="sim-bezel-led-label">RX/TX</span>
+            </div>
+            <div class="sim-bezel-led">
+              <span class="sim-bezel-led-lens stat" id="sim-led-stat" title="FreeRTOS Heartbeat"></span>
+              <span class="sim-bezel-led-label">STAT</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recessed Bezel Window housing the strict 320x240 LCD -->
+        <div class="sim-screen-well">
+          <div class="lcd-screen-container" id="sim-lcd-screen">
+            <!-- Glass Glare Reflection Layer -->
+            <div class="glass-glare-overlay"></div>
+
+            <!-- CRT Scanline Layer -->
+            <div class="crt-scanlines-layer" id="sim-crt-scanlines"></div>
+
+            <!-- Top LCD Status Bar (18px) -->
+            <div class="lcd-status-bar">
+              <div class="bar-left">
+                <span class="lcd-sim-badge" id="sim-badge" title="Simulated hardware display">SIM</span>
+                <span class="screen-title-tag" id="sim-screen-title">SYSTEM STATUS</span>
+              </div>
+              <div class="bar-right">
+                <span class="highlight">📶 5G</span>
+                <span>3.9V ⚡</span>
+                <span class="highlight" id="sim-clock">12:00</span>
+              </div>
+            </div>
+
+            <!-- Active Viewport for all 8 screens (198px) -->
+            <div class="lcd-viewport" id="sim-viewport">
+              <!-- Rendered screen DOM injected here -->
+            </div>
+
+            <!-- Bottom Touchscreen Navigation Tabs (24px) -->
+            <nav class="lcd-nav-bar" id="sim-nav-bar">
+              <!-- Navigation buttons rendered dynamically -->
+            </nav>
+          </div>
+        </div>
+
+        <!-- Physical Bezel Controls (Simulated tactile switches) -->
+        <div class="sim-bezel-bottom-controls">
+          <div class="sim-hw-buttons-row">
+            <button class="sim-hw-btn" id="sim-hw-prev" title="Switch to previous screen (Left Arrow)">◄ PREV</button>
+            <button class="sim-hw-btn" id="sim-hw-action" title="Trigger primary screen action (Space/Enter)">● ACTION</button>
+            <button class="sim-hw-btn" id="sim-hw-next" title="Switch to next screen (Right Arrow)">NEXT ►</button>
+            <button class="sim-hw-btn" id="sim-hw-pwr" title="Toggle Power / Wake / Sleep (P)">PWR ⏻</button>
+          </div>
+          <span class="sim-spec-pill">2.8" SPI TFT // XPT2046 TOUCH // 320×240</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Real-Time Hardware Telemetry Bar (Bottom HUD) -->
+  <footer class="sim-bottom-hud-bar">
+    <div class="sim-hud-item">
+      <span class="sim-hud-label">TARGET HW:</span>
+      <span class="sim-hud-val">ESP32-S3 (WROOM-1) 16MB</span>
+    </div>
+    <div class="sim-hud-item">
+      <span class="sim-hud-label">DISPLAY:</span>
+      <span class="sim-hud-val highlight">ILI9341 SPI (40MHz) 320×240</span>
+    </div>
+    <div class="sim-hud-item">
+      <span class="sim-hud-label">TOUCH CONTROLLER:</span>
+      <span class="sim-hud-val">XPT2046 Resistive SPI</span>
+    </div>
+    <div class="sim-hud-item">
+      <span class="sim-hud-label">BACKEND:</span>
+      <span class="sim-hud-val accent">Flask API (127.0.0.1:5000)</span>
+    </div>
+    <div class="sim-hud-item">
+      <span class="sim-touch-coord-hud" id="sim-touch-hud">TOUCH: X=---, Y=--- (IDLE)</span>
+    </div>
+  </footer>
+
+  <script type="module" src="/src/simulatorApp.js"></script>
+</body>
+</html>

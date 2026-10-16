@@ -67,5 +67,9 @@ jobs:
       - name: Run frontend focus timer test suite
         run: node tests/test_frontend_focus_timer.js
 
+      - name: Run embedded screen simulator test suite
+        run: node tests/test_embedded_simulator.js
+
       - name: Run frontend production build
         run: npm run build --prefix frontend
+
