@@ -415,7 +415,33 @@ def post_cost_settings() -> Tuple[Response, int]:
     }), 200
 
 
+def get_server_config() -> Tuple[str, int]:
+    """
+    Retrieves the server host and port configuration from environment variables.
+    Defaults to host '127.0.0.1' (localhost only) and port 5000.
+    Setting HOST='0.0.0.0' allows external devices (such as an ESP32 on the same trusted LAN)
+    to connect to the backend.
+    """
+    raw_host = os.environ.get("HOST", "127.0.0.1").strip()
+    host = raw_host if raw_host else "127.0.0.1"
+
+    raw_port = os.environ.get("PORT", "5000").strip()
+    try:
+        port = int(raw_port)
+        if port < 1 or port > 65535:
+            port = 5000
+    except ValueError:
+        port = 5000
+
+    return host, port
+
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    print(f"Starting PulseBox Cyber Desk backend on port {port}...")
-    app.run(host="127.0.0.1", port=port, debug=False)
+    host, port = get_server_config()
+    if host == "0.0.0.0":
+        print(f"Starting PulseBox Cyber Desk backend on {host}:{port} (LAN accessible)...")
+        print("WARNING: Binding to 0.0.0.0 exposes this service to all reachable local network interfaces.")
+    else:
+        print(f"Starting PulseBox Cyber Desk backend on {host}:{port} (Localhost only)...")
+    app.run(host=host, port=port, debug=False)
+

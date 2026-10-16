@@ -78,7 +78,8 @@ cyber desk/
 cd backend
 python app.py
 ```
-*(Backend runs on `http://127.0.0.1:5000`)*
+*(Default: `http://127.0.0.1:5000` localhost only. For optional local-network access when testing with an ESP32 on the same trusted Wi-Fi, run `$env:HOST="0.0.0.0"; python app.py`)*
+
 
 ### 2. Run the Frontend Simulator
 ```powershell

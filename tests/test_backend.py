@@ -17,7 +17,7 @@ import pytest
 backend_dir = Path(__file__).resolve().parent.parent / "backend"
 sys.path.insert(0, str(backend_dir))
 
-from app import app
+from app import app, get_server_config, ALLOWED_ORIGINS
 from state import state_manager
 from costs import (
     cost_manager,
@@ -1252,5 +1252,64 @@ def test_weather_endpoint_does_not_leak_secrets(client, monkeypatch):
 
     res_weather = client.get("/weather").get_data(as_text=True)
     assert secret not in res_weather
+
+
+# ============================================================================
+# 16. SERVER CONFIGURATION & HOST/PORT BINDING TESTS
+# ============================================================================
+
+def test_server_config_defaults(monkeypatch):
+    """Verify default host is 127.0.0.1 (localhost) and port is 5000."""
+    monkeypatch.delenv("HOST", raising=False)
+    monkeypatch.delenv("PORT", raising=False)
+    host, port = get_server_config()
+    assert host == "127.0.0.1"
+    assert port == 5000
+
+
+def test_server_config_custom_host_lan(monkeypatch):
+    """Verify setting HOST=0.0.0.0 is respected for LAN accessibility."""
+    monkeypatch.setenv("HOST", "0.0.0.0")
+    monkeypatch.delenv("PORT", raising=False)
+    host, port = get_server_config()
+    assert host == "0.0.0.0"
+    assert port == 5000
+
+
+def test_server_config_custom_port(monkeypatch):
+    """Verify custom PORT is parsed as an integer."""
+    monkeypatch.setenv("PORT", "5001")
+    monkeypatch.delenv("HOST", raising=False)
+    host, port = get_server_config()
+    assert host == "127.0.0.1"
+    assert port == 5001
+
+
+def test_server_config_both_host_and_port(monkeypatch):
+    """Verify both custom HOST and PORT are applied together."""
+    monkeypatch.setenv("HOST", "0.0.0.0")
+    monkeypatch.setenv("PORT", "8080")
+    host, port = get_server_config()
+    assert host == "0.0.0.0"
+    assert port == 8080
+
+
+def test_server_config_invalid_port_fallback(monkeypatch):
+    """Verify non-numeric or out-of-range port safely falls back to default 5000."""
+    monkeypatch.setenv("PORT", "invalid-port")
+    host, port = get_server_config()
+    assert port == 5000
+
+    monkeypatch.setenv("PORT", "99999")
+    host, port = get_server_config()
+    assert port == 5000
+
+
+def test_cors_configuration_remains_strict():
+    """Verify CORS is restricted to trusted local development origins and does NOT allow wildcard *."""
+    assert "*" not in ALLOWED_ORIGINS
+    for origin in ALLOWED_ORIGINS:
+        assert origin.startswith("http://localhost:") or origin.startswith("http://127.0.0.1:")
+
 
 

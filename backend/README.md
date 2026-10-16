@@ -19,15 +19,51 @@ pip install -r requirements.txt
 ```
 
 ### 3. Start the Backend Server
-Run the Flask server locally:
+
+The backend supports two startup modes:
+
+#### Mode A: Localhost Only Access (Default — Recommended for Laptop Simulator)
+By default, the server binds strictly to the loopback interface (`127.0.0.1`):
 
 ```powershell
+# PowerShell (Windows)
 python app.py
 ```
+*(On Linux/macOS: `python app.py`)*
 
-By default, the server listens at **`http://127.0.0.1:5000`**.
+The server listens securely at **`http://127.0.0.1:5000`** and is accessible only from the local machine.
 
-*(To specify a custom port, set the `PORT` environment variable: `$env:PORT=5001; python app.py`)*
+#### Mode B: Optional LAN Access (For ESP32 on Trusted Local Wi-Fi)
+To allow an ESP32 microcontroller on the same trusted local network (LAN) to access the backend API, explicitly set `HOST=0.0.0.0`:
+
+```powershell
+# PowerShell (Windows)
+$env:HOST="0.0.0.0"; python app.py
+```
+```bash
+# Bash (Linux/macOS)
+HOST=0.0.0.0 python app.py
+```
+
+*(To specify a custom port in either mode: `$env:PORT=5001; python app.py`)*
+
+#### Finding Your Laptop's Private IPv4 Address for ESP32 Firmware
+When running in LAN Mode (`HOST=0.0.0.0`), the ESP32 must connect using your laptop's **private IPv4 address** on your local network (e.g. `http://192.168.1.150:5000`):
+
+1. **Find your IP address:**
+   - **Windows:** Open PowerShell and run `ipconfig`. Look for the **IPv4 Address** under your active Wi-Fi or Ethernet adapter (e.g. `192.168.1.150` or `10.0.0.42`).
+   - **Linux:** Run `ip -4 addr show` or `hostname -I`.
+   - **macOS:** Run `ipconfig getifaddr en0` (or `en1`).
+2. **Configure future ESP32 firmware:**
+   - Set the backend base URL in firmware to: `http://<YOUR_LAPTOP_IP>:5000` (e.g. `http://192.168.1.150:5000/state`).
+   - ⚠️ **Important:** Never use `http://127.0.0.1:5000` or `http://localhost:5000` on the ESP32; on a microcontroller, `127.0.0.1` refers to the ESP32 itself, not your laptop!
+
+#### ⚠️ Network Security Warning
+- **LAN Exposure Only:** Binding to `0.0.0.0` exposes the Flask development server to any device on the same local network subnet.
+- **Trusted Networks Only:** Use LAN mode only on trusted private networks (such as your home or lab Wi-Fi). Do not bind to `0.0.0.0` on untrusted or public networks (such as public Wi-Fi).
+- **No Port Forwarding:** Never configure router port forwarding (NAT WAN forwarding) or expose port 5000 to the public internet.
+- **No Hardcoded Credentials:** Never hardcode credentials, Wi-Fi passwords, or bot tokens in source code or Git commits.
+
 
 ---
 
@@ -413,11 +449,18 @@ Invoke-RestMethod -Uri "http://127.0.0.1:5000/reset" -Method Post
 ---
 
 ## 🔒 CORS Configuration
-CORS is explicitly enabled and restricted to local development origins:
+
+CORS (Cross-Origin Resource Sharing) is explicitly enabled and restricted to trusted local browser simulator origins:
 - `http://localhost:5173` (Vite simulator)
 - `http://127.0.0.1:5173`
 - `http://localhost:3000`
 - `http://127.0.0.1:3000`
+
+### 💡 Why CORS is NOT Weakened for ESP32 Integration
+- **Browser-Only Enforcement:** CORS is a security mechanism enforced exclusively by web browsers when web pages make cross-origin JavaScript requests (`fetch`, `XMLHttpRequest`).
+- **Native Microcontrollers are Unaffected:** Native ESP32 HTTP clients (such as Arduino `HTTPClient` or ESP-IDF `esp_http_client`) communicate directly over TCP/IP sockets. They do not execute inside a web browser, do not send `Origin` headers, and are not subject to CORS restrictions.
+- **Strict Security:** Wildcard CORS (`*`) is deliberately avoided to protect the local development server from unauthorized cross-site browser requests.
+
 
 ---
 
