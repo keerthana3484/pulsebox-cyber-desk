@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PulseBox Cyber Desk — Browser Simulator (ESP32 320x240)</title>
+  <meta name="description" content="Browser-based hardware simulator for PulseBox Cyber Desk featuring a simulated 320x240 touchscreen, realistic tin-box enclosure, and pixel-art mascot.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body data-theme="amber-orange">
+  <div class="workbench-container">
+    <!-- Top Workbench Control Header -->
+    <header class="workbench-header">
+      <div class="brand-section">
+        <div class="brand-badge">
+          <div class="brand-logo-icon">⚡</div>
+          <div>
+            <div class="brand-title">PULSEBOX CYBER DESK</div>
+            <div class="brand-subtitle">ESP32-S3 HARDWARE SIMULATOR</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Prominent Simulation Mode Indicator -->
+      <div class="sim-mode-banner">
+        <span class="sim-pulse-dot"></span>
+        <span>SIMULATION MODE ACTIVE</span>
+      </div>
+
+      <!-- Workbench Tools & Display Modes -->
+      <div class="header-tools">
+        <div class="tool-group">
+          <span class="tool-label">ZOOM:</span>
+          <button class="workbench-btn scale-btn" data-scale="1x">1X</button>
+          <button class="workbench-btn scale-btn active" data-scale="fit">FIT</button>
+          <button class="workbench-btn scale-btn" data-scale="1-5x">1.5X</button>
+          <button class="workbench-btn scale-btn" data-scale="2x">2X</button>
+        </div>
+
+        <button class="workbench-btn active" id="wb-sound-toggle">🔊 SFX ON</button>
+      </div>
+    </header>
+
+    <!-- Main Stage: Industrial Tin-Box Cyber Desk -->
+    <main class="workbench-stage">
+      <div class="tin-box-wrapper scale-fit" id="tin-box-wrapper">
+        <div class="tin-box-chassis">
+          <!-- 4 Corner Industrial Hex Bolts -->
+          <div class="hex-bolt top-left"></div>
+          <div class="hex-bolt top-right"></div>
+          <div class="hex-bolt bottom-left"></div>
+          <div class="hex-bolt bottom-right"></div>
+
+          <!-- Top Chassis Label & Hardware LEDs -->
+          <div class="chassis-top-bar">
+            <span class="chassis-title-engraved">PULSEBOX // ESP32-S3 // REV 2.8</span>
+            <div class="hardware-leds">
+              <div class="led-group">
+                <span class="led-lens pwr" id="led-pwr" title="Power 3.3V Rail"></span>
+                <span class="led-label">PWR</span>
+              </div>
+              <div class="led-group">
+                <span class="led-lens wifi" id="led-rxtx" title="SPI Bus Activity"></span>
+                <span class="led-label">IO</span>
+              </div>
+              <div class="led-group">
+                <span class="led-lens stat" id="led-stat" title="RTOS Heartbeat"></span>
+                <span class="led-label">STAT</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recessed Screen Bezel -->
+          <div class="touchscreen-bezel">
+            <!-- Simulated 320x240 Landscape Touchscreen -->
+            <div class="lcd-screen-container" id="lcd-screen">
+              <!-- Glass Glare Reflection Layer -->
+              <div class="glass-glare-overlay"></div>
+
+              <!-- CRT Scanline Layer -->
+              <div class="crt-scanlines-layer" id="crt-scanlines"></div>
+
+              <!-- Top LCD Status Bar (20px) -->
+              <div class="lcd-status-bar">
+                <div class="bar-left">
+                  <span class="lcd-sim-badge">SIM</span>
+                  <span class="screen-title-tag" id="lcd-screen-title">SYSTEM STATUS</span>
+                </div>
+                <div class="bar-right">
+                  <span class="highlight">📶 5G</span>
+                  <span>3.9V ⚡</span>
+                  <span class="highlight" id="lcd-status-clock">11:24</span>
+                </div>
+              </div>
+
+              <!-- Active Viewport for the 7 Screens (188px) -->
+              <div class="lcd-viewport" id="lcd-viewport">
+                <!-- Screen Content Injected Here -->
+              </div>
+
+              <!-- Bottom Touchscreen Navigation Tabs (32px) -->
+              <nav class="lcd-nav-bar" id="lcd-nav-bar">
+                <!-- 7 Screen Nav Tabs Injected Here -->
+              </nav>
+            </div>
+          </div>
+
+          <!-- Bottom Chassis Physical Buttons & Controls -->
+          <div class="chassis-bottom-controls">
+            <div class="hw-buttons-row">
+              <button class="hw-tactile-btn" id="hw-btn-prev" title="Previous Screen">◄ PREV</button>
+              <button class="hw-tactile-btn" id="hw-btn-action" title="Trigger Action">● ACTION</button>
+              <button class="hw-tactile-btn" id="hw-btn-next" title="Next Screen">NEXT ►</button>
+              <button class="hw-tactile-btn" id="hw-toggle-power" title="Power On/Off">PWR ⏻</button>
+            </div>
+            <span class="chassis-spec-label">ILI9341 SPI • 320×240</span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Workbench Telemetry Console & Serial Monitor -->
+    <footer class="workbench-bottom-panel">
+      <!-- Live UART0 Serial Monitor -->
+      <section class="telemetry-console-card">
+        <div class="console-header">
+          <div class="console-title">
+            <span class="sim-pulse-dot"></span>
+            <span>SIMULATED SERIAL MONITOR (UART0)</span>
+          </div>
+          <span class="console-baud">115200 BAUD • 8-N-1 • ESP-IDF</span>
+        </div>
+        <div class="serial-logs-stream" id="serial-logs-stream">
+          <!-- Live serial output will stream here -->
+        </div>
+      </section>
+
+      <!-- Hardware Specs Card -->
+      <aside class="specs-reference-card">
+        <div class="specs-title">HARDWARE ARCHITECTURE</div>
+        <div class="specs-list">
+          <div class="spec-item">
+            <span class="spec-label">SoC Controller:</span>
+            <span class="spec-val">ESP32-S3 Dual-Core 240MHz</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Display Module:</span>
+            <span class="spec-val">2.8" SPI TFT (ILI9341 320x240)</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Touch Digitizer:</span>
+            <span class="spec-val">XPT2046 SPI Resistive</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Enclosure:</span>
+            <span class="spec-val">Industrial Brushed Tin Box</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Backend Service:</span>
+            <span class="spec-val">Flask REST API (Planned)</span>
+          </div>
+        </div>
+      </aside>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
