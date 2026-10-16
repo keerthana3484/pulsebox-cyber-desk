@@ -256,6 +256,127 @@ html, body {
   }
 }
 
+@media (max-width: 600px) {
+  .workbench-header {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+  .brand-section {
+    justify-content: center;
+  }
+  .sim-mode-banner {
+    font-size: 8.5px;
+    padding: 2px 6px;
+  }
+  .header-tools {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* 390x844 mobile viewport scaling */
+@media (max-width: 450px) {
+  .workbench-stage {
+    padding: 12px 6px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+  .tin-box-wrapper {
+    width: 100%;
+    max-width: 376px;
+    margin: 4px auto;
+  }
+  .tin-box-chassis {
+    width: 100%;
+    max-width: 376px;
+    padding: 14px 8px 10px 8px;
+    box-sizing: border-box;
+  }
+  .touchscreen-bezel {
+    width: 100%;
+    max-width: 336px;
+    padding: 4px;
+    box-sizing: border-box;
+  }
+  .chassis-bottom-controls {
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+  .chassis-spec-label {
+    width: 100%;
+    text-align: center;
+  }
+  .hw-buttons-row {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .hw-tactile-btn {
+    padding: 4px 6px;
+    font-size: 7.5px;
+  }
+}
+
+/* 320x240 landscape direct hardware/embedded mode */
+@media (max-width: 340px), (max-height: 280px) and (orientation: landscape) {
+  html, body {
+    overflow: hidden;
+  }
+  .workbench-container {
+    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
+  }
+  .workbench-header,
+  .workbench-bottom-panel,
+  .hex-bolt,
+  .chassis-top-bar,
+  .chassis-bottom-controls {
+    display: none !important;
+  }
+  .workbench-stage {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tin-box-wrapper {
+    margin: 0 !important;
+    transform: scale(1) !important;
+  }
+  .tin-box-chassis {
+    width: 320px !important;
+    height: 240px !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  .touchscreen-bezel {
+    width: 320px !important;
+    height: 240px !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+  .lcd-screen-container {
+    width: 320px !important;
+    height: 240px !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+}
+
 .tin-box-chassis {
   width: 420px;
   background:
@@ -514,6 +635,9 @@ html, body {
   cursor: pointer;
   border-radius: 2px;
   padding: 0 1px;
+  min-height: 22px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nav-tab-btn:hover {
@@ -644,6 +768,8 @@ html, body {
   justify-content: center;
   gap: 3px;
   transition: all 0.1s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .cyber-btn:hover {
@@ -849,6 +975,14 @@ html, body {
   padding: 4px 6px;
   border-radius: 2px;
   border-left: 2px solid var(--accent-orange);
+  max-height: 30px;
+  overflow-y: auto;
+}
+
+.msg-body {
+  flex: 1;
+  word-break: break-word;
+  line-height: 1.25;
 }
 
 .msg-prefix {
@@ -890,6 +1024,8 @@ html, body {
   flex-direction: column;
   gap: 2px;
   flex: 1;
+  overflow-y: auto;
+  max-height: 168px;
 }
 
 .server-row-item {
@@ -897,10 +1033,12 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 3px 5px;
+  min-height: 22px;
   border-radius: 2px;
   cursor: pointer;
   background: #0e1016;
   border: 1px solid transparent;
+  touch-action: manipulation;
 }
 
 .server-row-item:hover {
@@ -965,6 +1103,11 @@ html, body {
 .node-badge.amber {
   background: var(--accent-amber-dim);
   color: var(--accent-amber);
+}
+
+.node-badge.red {
+  background: var(--status-red-dim);
+  color: var(--status-red);
 }
 
 .node-stats-line {
@@ -1051,10 +1194,17 @@ html, body {
   border: 1px solid var(--accent-orange);
   color: var(--accent-orange-bright);
   font-family: var(--font-mono);
-  font-size: 6.5px;
-  padding: 1px 4px;
+  font-size: 7px;
+  padding: 2px 5px;
+  min-height: 18px;
+  min-width: 18px;
   border-radius: 2px;
   cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .incident-rows-wrap {
@@ -1085,10 +1235,12 @@ html, body {
   align-items: center;
   gap: 4px;
   padding: 3px 4px;
+  min-height: 24px;
   border-radius: 2px;
   background: #0e1016;
   border: 1px solid transparent;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background 0.15s ease;
 }
 
@@ -1239,6 +1391,9 @@ html, body {
   padding: 4px;
   line-height: 1.25;
   border-left: 2px solid var(--accent-orange);
+  max-height: 38px;
+  overflow-y: auto;
+  word-break: break-word;
 }
 
 .inc-meta-block {
@@ -1502,18 +1657,25 @@ html, body {
 }
 
 .cost-edit-btn {
-  background: transparent;
-  border: none;
+  background: rgba(255, 87, 34, 0.12);
+  border: 1px solid rgba(255, 87, 34, 0.4);
   color: var(--accent-orange-bright);
   font-family: var(--font-mono);
-  font-size: 5.5px;
-  font-weight: 700;
+  font-size: 6.5px;
+  font-weight: 800;
   cursor: pointer;
-  padding: 0 1px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  touch-action: manipulation;
+  min-height: 16px;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
 }
 
 .cost-edit-btn:hover {
-  text-decoration: underline;
+  background: rgba(255, 87, 34, 0.25);
+  text-decoration: none;
 }
 
 /* Budget Progress Bar */
@@ -1732,8 +1894,9 @@ html, body {
 
 .adjuster-controls-row .cyber-btn {
   flex: 1;
-  padding: 2px 0;
-  font-size: 6.5px;
+  padding: 3px 1px;
+  font-size: 7px;
+  min-height: 22px;
 }
 
 .adjuster-input-row {
@@ -1903,6 +2066,9 @@ html, body {
   border-radius: 2px;
   padding: 4px 6px;
   border-left: 2px solid var(--accent-orange);
+  max-height: 28px;
+  overflow-y: auto;
+  word-break: break-word;
 }
 
 .staging-meta-row {
@@ -2349,10 +2515,12 @@ html, body {
   background: #141720;
   border: 1px solid var(--screen-border);
   color: #a0aec0;
-  font-size: 7.5px;
-  padding: 1px 4px;
+  font-size: 8px;
+  padding: 2px 6px;
+  min-height: 18px;
   border-radius: 2px;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .ft-sound-btn:hover {
@@ -2607,11 +2775,13 @@ html, body {
   border: 1px solid var(--screen-border);
   color: #728096;
   font-family: var(--font-mono);
-  font-size: 6.5px;
+  font-size: 7px;
   font-weight: 700;
-  padding: 2px 6px;
+  padding: 3px 7px;
+  min-height: 20px;
   border-radius: 2px;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.15s ease;
 }
 
@@ -2727,9 +2897,11 @@ html, body {
   font-family: var(--font-mono);
   font-size: 7px;
   font-weight: 800;
-  padding: 2px 8px;
+  padding: 3px 8px;
+  min-height: 20px;
   border-radius: 2px;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .toggle-pill.active {
@@ -2749,9 +2921,11 @@ html, body {
   color: #728096;
   font-family: var(--font-mono);
   font-size: 6.5px;
-  padding: 2px 6px;
+  padding: 3px 7px;
+  min-height: 20px;
   border-radius: 2px;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .pill-btn.active {
