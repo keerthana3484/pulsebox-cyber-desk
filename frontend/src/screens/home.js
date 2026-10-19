@@ -57,13 +57,9 @@ export function renderHomeScreen(container, state, appActions, options = {}) {
             ${isOffline ? 'SYS OFFLINE' : isNominal ? 'SYS NOMINAL' : 'SYS DEGRADED'}
           </div>
 
-          <div class="voxel-hero-status" id="home-hero-status">
-            ${isOffline ? 'NO SYNC' : `UPTIME ${uptimeStr}`}
-          </div>
-
           <div class="voxel-hero-actions">
-            <button class="voxel-btn ${isNominal ? 'variant-secondary' : 'variant-danger'}" id="btn-home-detail">
-              TELEMETRY ▶
+            <button class="voxel-btn ${isNominal ? 'variant-secondary' : 'variant-danger'} voxel-tap-arrow-btn" id="btn-home-detail" aria-label="Details">
+              ▶
             </button>
           </div>
         </div>
@@ -76,7 +72,7 @@ export function renderHomeScreen(container, state, appActions, options = {}) {
               ◀ BACK
             </button>
             <span class="voxel-detail-title">SYSTEM TELEMETRY</span>
-            <span class="sim-tag-mini">[LIVE]</span>
+            <span class="sim-tag-mini">UP ${uptimeStr}</span>
           </div>
 
           <!-- 2x2 Telemetry Grid -->

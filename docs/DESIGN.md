@@ -5,10 +5,10 @@
 The **PulseBox Cyber Desk** user interface is engineered for a 2.8" SPI TFT LCD (ILI9341 controller, 320×240 pixels) powered by an ESP32 microcontroller, accompanied by a pixel-accurate browser-based embedded simulator.
 
 The visual direction follows an **original retro-voxel / blocky sandbox-game style**:
-- **Original & Clean IP:** 100% original pixel art, voxel icons, and block geometry. Absolutely zero Mojang/Minecraft textures, logos, sound effects, fonts, or assets. The word "Minecraft" is never used in code, filenames, or UI text.
+- **Original & Clean IP:** 100% original pixel art, voxel icons, and block geometry. Absolutely zero external sandbox game textures, logos, sound effects, fonts, or assets. Zero third-party game trademarks are used in code, filenames, or UI text.
 - **Strict 8px Grid:** Every UI card, bezel, button, slot, and icon is anchored to a hard 8px modular chunk grid. Zero smooth vector curves; all edges render with crisp square pixels (`shape-rendering: crispEdges`).
 - **One Hero Element per Screen:** The user must grasp the essential state of the device in **under 1 second** from 3 feet away on a desk.
-- **Radical Brevity:** Maximum 3 text elements and maximum 12 words per screen (excluding the persistent bottom hotbar).
+- **Radical Brevity:** Maximum 3 text elements and 5 words or fewer per screen on overview (excluding the persistent bottom hotbar).
 - **Dual Indexed Palettes:** Strict maximum of 16 indexed colors for Day (Earth/Sunlight) and 16 indexed colors for Night (Low-Glare Midnight).
 
 ---
@@ -147,3 +147,13 @@ The source file [`frontend/src/tokens.js`](file:///c:/Users/ASUS/OneDrive/Deskto
 2. **Tap for Detail:** Tapping anywhere on the hero stage or tapping a dedicated `[MORE]` block opens a lightweight **Detail View**.
 3. **Escape Route:** Every detail view features a prominent **`[< BACK]`** button (at least 32×32px) in the top-left corner.
 4. **Safety Gating:** Mutation controls in the browser simulator gracefully display `[AUTH REQUIRED]` notices while leaving read-only telemetry intact.
+ 
+---
+ 
+## 7. Typography & Font Licensing
+ 
+All typography in PulseBox Cyber Desk uses open-source fonts designed for pixel grids:
+- **Primary Font:** `Silkscreen` (designed by Jason Kottke) — Licensed under the **SIL Open Font License, Version 1.1** (OFL-1.1).
+- **Secondary Fallback Font:** `Press Start 2P` (designed by CodeMan38) — Licensed under the **SIL Open Font License, Version 1.1** (OFL-1.1).
+- **Usage:** Free for commercial and non-commercial use, modification, and redistribution according to the terms of the SIL Open Font License. No proprietary or restricted fonts are used in this codebase.
+

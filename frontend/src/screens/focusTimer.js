@@ -70,15 +70,12 @@ export function renderFocusTimerScreen(container, state, appActions, options = {
               ${xpFillHtml}
             </div>
           </div>
-          <div class="voxel-hero-status ${isFocus ? 'mode-focus' : 'mode-break'}">
-            ${isFocus ? 'FOCUS MODE' : 'BREAK MODE'}
-          </div>
           <div class="voxel-hero-actions">
             <button class="voxel-btn ${isRunning ? 'variant-caution' : 'variant-primary'}" id="btn-hero-timer-toggle">
               ${isRunning ? 'PAUSE' : (elapsedSeconds > 0 ? 'RESUME' : 'START')}
             </button>
-            <button class="voxel-btn variant-secondary" id="btn-timer-detail">
-              DETAILS ▶
+            <button class="voxel-btn variant-secondary voxel-tap-arrow-btn" id="btn-timer-detail" aria-label="Details">
+              ▶
             </button>
           </div>
         </div>

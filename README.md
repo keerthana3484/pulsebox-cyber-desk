@@ -1,15 +1,15 @@
 # PulseBox Cyber Desk 🕹️⚡
 
-[![CI Workflow](https://github.com/your-username/pulsebox-cyber-desk/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/pulsebox-cyber-desk/actions/workflows/ci.yml)
-[![Pages Deployment](https://github.com/your-username/pulsebox-cyber-desk/actions/workflows/deploy-pages.yml/badge.svg)](https://your-username.github.io/pulsebox-cyber-desk/)
+[![CI Workflow](https://github.com/keerthana3484/pulsebox-cyber-desk/actions/workflows/ci.yml/badge.svg)](https://github.com/keerthana3484/pulsebox-cyber-desk/actions/workflows/ci.yml)
+[![Pages Deployment](https://github.com/keerthana3484/pulsebox-cyber-desk/actions/workflows/deploy-pages.yml/badge.svg)](https://keerthana3484.github.io/pulsebox-cyber-desk/)
 [![Security Scans](https://img.shields.io/badge/Security-Gitleaks%20%7C%20pip--audit%20%7C%20npm--audit-brightgreen.svg)](#-security--threat-model)
-[![Tests Passing](https://img.shields.io/badge/Tests-720%2B%20Passing-success.svg)](#-test-suites--ci-verification)
+[![Tests Passing](https://img.shields.io/badge/Tests-748%20Passing-success.svg)](#-test-suites--ci-verification)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![PlatformIO ESP32](https://img.shields.io/badge/Hardware-ESP32%20%2B%20ILI9341-orange.svg)](firmware/)
 
 > **A tactile physical-digital micro desk fixture and 320×240 embedded display that bridges real-world developer operations with an original retro-voxel aesthetic.**
 
-[🎮 Launch Live Web Simulator Demo](https://your-username.github.io/pulsebox-cyber-desk/) &nbsp;|&nbsp; [📖 Design Specification](docs/DESIGN.md) &nbsp;|&nbsp; [🔒 Security Policy](SECURITY.md)
+[🎮 Launch Live Web Simulator Demo](https://keerthana3484.github.io/pulsebox-cyber-desk/) &nbsp;|&nbsp; [📖 Design Specification](docs/DESIGN.md) &nbsp;|&nbsp; [🔒 Security Policy](SECURITY.md)
 
 ---
 
@@ -60,7 +60,7 @@ Sitting on your desk, PulseBox couples an **ESP32 microcontroller** and **2.8-in
 
 ## 📸 Screen Gallery
 
-Each screen follows the strict **Hero Element Rule** (readable in <1 second) with **maximum 3 text elements and 12 words** per screen. Tap any screen or button to enter its high-density **Detail View**.
+Each screen follows the strict **Hero Element Rule** (readable in <1 second) with **maximum 3 text elements and 5 words or fewer** on overview (`SYS NOMINAL ▶`, `6/6 ONLINE ▶`, `0 ALERTS ▶`, `$64.20 TODAY ▶`, etc.). Tap the arrow (`▶`) or hero element on any screen to enter its high-density **Detail View**.
 
 | Screen | Hero Overview | Behind-The-Tap Detail View | Core Functionality |
 | :--- | :---: | :---: | :--- |
@@ -139,8 +139,9 @@ Desk gadgets fail when they demand active reading. PulseBox enforces that every 
 
 ### 2. Radical Brevity (Word & Element Limits)
 - **Max 3 text elements** per screen (excluding the persistent hotbar).
-- **Max 12 words** total across the screen.
-- Labels are strictly 1 to 3 words (e.g. `CLUSTER NODES`, `6/6 ONLINE`, `ALL NOMINAL`).
+- **Max 5 words total** per screen on overview (excluding the hotbar).
+- Overview labels are strictly 1 to 2 words (e.g. `SYS NOMINAL`, `6/6 ONLINE`, `$64.20 TODAY`, `CONFIG READY`).
+- Overview detail triggers use a compact tap arrow icon (`▶`) instead of bulky text buttons.
 - Zero multi-paragraph text or tables on the embedded canvas.
 
 ### 3. Dual 16-Color Indexed Palettes
@@ -178,17 +179,17 @@ The project boasts comprehensive automated test coverage spanning Python unit/in
 
 | Test Suite | Path | Checks / Assertions | Status |
 | :--- | :--- | :---: | :---: |
-| **Backend REST API** | [tests/test_backend.py](tests/test_backend.py) | **72** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
-| **Embedded Simulator** | [tests/test_embedded_simulator.js](tests/test_embedded_simulator.js) | **112** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
+| **Backend REST API** | [tests/test_backend.py](tests/test_backend.py) | **75** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
+| **Embedded Simulator** | [tests/test_embedded_simulator.js](tests/test_embedded_simulator.js) | **135** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Design Tokens & Palettes** | [tests/test_design_tokens.js](tests/test_design_tokens.js) | **298** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Voxel Component Library** | [tests/test_voxel_components.js](tests/test_voxel_components.js) | **79** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
-| **Screen Word Count Compliance** | [tests/test_screen_word_counts.js](tests/test_screen_word_counts.js) | **8/8** screens | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
+| **Screen Word Count Compliance** | [tests/test_screen_word_counts.js](tests/test_screen_word_counts.js) | **8/8** screens (<=5 words) | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Focus Timer Engine** | [tests/test_frontend_focus_timer.js](tests/test_frontend_focus_timer.js) | **61** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Cloud Costs Module** | [tests/test_frontend_costs.js](tests/test_frontend_costs.js) | **32** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Weather & Clock Screen** | [tests/test_frontend_weather_clock.js](tests/test_frontend_weather_clock.js) | **33** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Incident Logging** | [tests/test_frontend_incidents.js](tests/test_frontend_incidents.js) | **27** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **ESP32 Firmware Build** | [firmware/src/main.cpp](firmware/src/main.cpp) | **PlatformIO** | ![Build Passing](https://img.shields.io/badge/PlatformIO-Compiled-brightgreen) |
-| **TOTAL ASSERTIONS** | — | **720+ checks** | **100% PASS** |
+| **TOTAL ASSERTIONS** | — | **748 checks** | **100% PASS** |
 
 ### Firmware Resource Footprint (ESP32)
 - **RAM Usage:** 22,028 Bytes / 327,680 Bytes (**6.7%**)
@@ -207,7 +208,7 @@ The project boasts comprehensive automated test coverage spanning Python unit/in
 ### 2. Configure Environment
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/pulsebox-cyber-desk.git
+git clone https://github.com/keerthana3484/pulsebox-cyber-desk.git
 cd pulsebox-cyber-desk
 
 # Set up local environment files

@@ -28,16 +28,12 @@ export function renderSettingsScreen(container, state, appActions, options = {})
           </div>
 
           <div class="voxel-hero-metric status-nominal" id="settings-hero-metric">
-            DEVICE CONFIG
-          </div>
-
-          <div class="voxel-hero-status" id="settings-hero-status">
-            SYSTEM READY
+            CONFIG READY
           </div>
 
           <div class="voxel-hero-actions">
-            <button class="voxel-btn variant-secondary" id="btn-settings-detail">
-              SETTINGS ▶
+            <button class="voxel-btn variant-secondary voxel-tap-arrow-btn" id="btn-settings-detail" aria-label="Details">
+              ▶
             </button>
           </div>
         </div>

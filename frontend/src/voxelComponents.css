@@ -127,6 +127,19 @@
   transform: none !important;
 }
 
+.voxel-tap-arrow-btn {
+  min-width: 28px;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+}
+
 /* ==========================================================================
    2. HEART BAR & HUNGER BAR
    ========================================================================== */

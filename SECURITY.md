@@ -25,8 +25,9 @@ The project strictly adheres to nine core security invariants:
 
 1. **Zero Secret Exposure in Frontend Code:**
    - The backend `PULSEBOX_API_KEY` is never accessible to browser JavaScript, never stored in `localStorage` or `sessionStorage`, and never injected into client-side environment variables bundled by Vite.
-2. **State-Mutation Authentication:**
-   - Every endpoint that alters system state (`/simulate-failure`, `/restore`, `/reset`, `/costs/settings`, `/record-health-check`) requires `Authorization: Bearer <PULSEBOX_API_KEY>`.
+2. **Role-Based Token Authentication (Admin vs Scoped Device Token):**
+   - Every endpoint that alters system state (`/simulate-failure`, `/restore`, `/reset`, `/costs/settings`) requires administrative credentials (`PULSEBOX_ADMIN_KEY` or `PULSEBOX_API_KEY`).
+   - The physical ESP32 device uses a separate, strictly scoped **Device Token** (`PULSEBOX_DEVICE_KEY`). The device token is permitted ONLY to submit telemetry (`/record-health-check`); any attempt to trigger administrative state changes with the device token is rejected with HTTP 403 Forbidden.
    - Token comparisons use constant-time verification (`secrets.compare_digest`) to prevent timing attacks.
 3. **Loopback-Only by Default (Explicit LAN Opt-In):**
    - The Flask backend binds strictly to `127.0.0.1` (localhost).
@@ -70,7 +71,7 @@ The project strictly adheres to nine core security invariants:
 | TRUST BOUNDARY 2: Local Wi-Fi / LAN                         |           |
 |                                                             v           |
 |  [Physical ESP32 Desk Display] <==== WPA2/WPA3 Wi-Fi =======+           |
-|   - ILI9341 SPI Display              (Pinned Root CA TLS)               |
+|   - ILI9341 SPI Display              (Scoped Device Token)              |
 |   - XPT2046 Touchscreen                                                 |
 +-------------------------------------------------------------------------+
                                                                |
@@ -86,11 +87,11 @@ The project strictly adheres to nine core security invariants:
 1. **Malicious Web Script (Cross-Origin Attacker):**
    - *Vector:* User visits an untrusted website while running the PulseBox backend locally.
    - *Goal:* Issue cross-origin requests to `http://localhost:5000` to trigger fake outages or alter cloud budgets.
-   - *Mitigation:* CORS whitelist rejects unauthorized origins; state-changing endpoints require `PULSEBOX_API_KEY` in the `Authorization` header (which browsers cannot send cross-origin without preflight consent).
+   - *Mitigation:* CORS whitelist rejects unauthorized origins; state-changing endpoints require `PULSEBOX_ADMIN_KEY` in the `Authorization` header (which browsers cannot send cross-origin without preflight consent).
 2. **Untrusted LAN Adjacent Device (Network Eavesdropper):**
    - *Vector:* Compromised IoT device or guest on the same Wi-Fi network.
-   - *Goal:* Intercept telemetry or spoof backend responses to display false data on the physical desk fixture.
-   - *Mitigation:* Backend defaults to `127.0.0.1` (invisible to LAN); firmware uses pinned Root CA verification for TLS connections, preventing ARP spoofing / MITM proxies.
+   - *Goal:* Intercept tokens or spoof backend responses to alter data on the desk fixture.
+   - *Mitigation:* Backend defaults to `127.0.0.1` (invisible to LAN); physical devices use limited `PULSEBOX_DEVICE_KEY` that cannot alter state; firmware uses pinned Root CA verification for TLS connections.
 3. **Desk Passerby / Accidental Physical Touch:**
    - *Vector:* Inadvertent touch or curious coworker tapping the physical desk display.
    - *Goal:* Accidental power-off, focus timer cancellation, or settings wipe.
@@ -110,25 +111,30 @@ The project strictly adheres to nine core security invariants:
 
 | Threat Category | Specific Threat | Implemented Mitigation | Verification |
 | :--- | :--- | :--- | :--- |
-| **Spoofing** | Attacker impersonates authorized administrator | `require_api_key` with constant-time Bearer token comparison (`secrets.compare_digest`) | `test_backend.py::test_require_api_key_*` |
-| **Tampering** | Man-in-the-Middle modifies firmware telemetry | Firmware enforces pinned Root CA (`ca_cert.h`); `setInsecure()` is strictly forbidden | Verified in `firmware/src/ca_cert.h` |
+| **Spoofing** | Attacker impersonates authorized administrator | `require_api_key` with constant-time Bearer token comparison (`secrets.compare_digest`) | `test_backend.py::test_admin_token_allowed_*` |
+| **Tampering** | Rogue device triggers fake outage or resets budget | Role-based token scoping: `PULSEBOX_DEVICE_KEY` restricted to telemetry, rejected with 403 on mutations | `test_backend.py::test_device_token_forbidden_*` |
 | **Repudiation** | Denying who triggered a server failure or reset | Structured `[AUDIT_LOG]` records timestamp, caller IP, target, and outcome | Tested in `app.py::audit_log` |
 | **Information Disclosure** | API keys leaked to browser or public repository | Token removed from browser storage; `.env` & `secrets.h` gitignored; Gitleaks CI | `test_frontend_*` & `test_design_tokens.js` |
 | **Denial of Service** | Flooding backend with giant payloads or requests | 16 KB payload cap (`MAX_CONTENT_LENGTH`) + 120 req/min sliding-window rate limiting | `test_oversized_payload_returns_413` |
-| **Elevation of Privilege** | Unauthenticated caller alters cloud budget | POST `/costs/settings` requires valid API key and enforces bounds ($1.00 to $1,000,000.00) | `test_post_cost_settings_*` |
+| **Elevation of Privilege** | Device token used for administrative state changes | Enforced role check (`role="admin"`) rejects non-admin tokens with 403 Forbidden | `test_backend.py::test_device_token_forbidden_*` |
 
 ---
 
-## 5. Remaining Risks & Operational Guidance
+## 5. Remaining Risks & Operational Guidance (Honest Disclosure)
 
 While the project has been hardened, operators should be aware of the following residual risks:
 
-1. **Unencrypted HTTP over Local LAN (if LAN Mode enabled):**
-   - If `PULSEBOX_ALLOW_LAN=true` is enabled to connect an ESP32 over plain HTTP (`http://<laptop-ip>:5000`), local network traffic (including the `PULSEBOX_API_KEY` if mutation calls are sent) is unencrypted on the local Wi-Fi segment.
-   - *Recommendation:* Place the backend behind a reverse proxy (e.g. Caddy or Nginx) with a local TLS certificate if deploying in untrusted office Wi-Fi environments.
-2. **Physical Device Tampering:**
-   - The ESP32 does not currently enable Flash Encryption or Secure Boot. An attacker with physical access and an external programmer could dump the flash firmware.
-   - *Recommendation:* For high-security environments, enable ESP32 hardware Flash Encryption and NVS encryption.
+1. **Plain HTTP LAN Token Exposure (CRITICAL RISK when LAN Mode is Active):**
+   - **The Vulnerability:** If `PULSEBOX_ALLOW_LAN=true` is enabled to connect an ESP32 or external device over unencrypted HTTP (`http://<ip>:5000`), all HTTP headers—including `Authorization: Bearer <token>`—are transmitted in cleartext. Anyone with packet capture access on the local Wi-Fi / LAN (e.g. via Wireshark or ARP spoofing) can read the token.
+   - **Implemented Mitigation (Device-Token Isolation):** The ESP32 is provisioned with a scoped `PULSEBOX_DEVICE_KEY` rather than the `PULSEBOX_ADMIN_KEY`. Even if an attacker sniffs the device token off the local Wi-Fi, they CANNOT trigger fake outages, restore nodes, wipe data, or alter budgets (mutations return 403 Forbidden).
+   - **Remaining Risk:** An attacker who intercepts the device token can forge health check telemetry (`/record-health-check`) to report false server states.
+   - **Operational Recommendation:** Do NOT enable LAN mode on untrusted public/office Wi-Fi networks. If LAN access is required, put the Flask backend behind a reverse proxy (e.g., Caddy, Nginx) terminating local TLS/HTTPS, or isolate IoT desk devices on a dedicated VLAN.
+2. **Physical Device Tampering (Flash Firmware Extraction):**
+   - The ESP32 hardware currently operates with development eFuses. Flash Encryption and Secure Boot are not burned.
+   - An attacker with physical access to the ESP32 and an external programmer could dump SPI flash memory and extract Wi-Fi credentials or the device token stored in firmware.
+   - *Operational Recommendation:* For production deployments in shared spaces, enable ESP32 hardware Flash Encryption and NVS encryption before flashing.
 3. **In-Memory Rate Limiting Across Restarts:**
-   - The rate limiter uses process memory and resets if the Flask backend process restarts.
-   - *Recommendation:* For production multi-worker deployments, back rate limiting with a shared Redis instance.
+   - The rate limiter uses local process memory and resets if the Flask process restarts.
+   - *Operational Recommendation:* For multi-worker production deployments, back rate limiting with a shared Redis instance.
+4. **Unauthenticated Read-Only Telemetry:**
+   - All `GET` endpoints (`/health`, `/state`, `/incidents`, `/costs`, `/weather`) remain unauthenticated so lightweight dashboards and simulators can render without managing credentials. In LAN mode, any device on the network can view system status.

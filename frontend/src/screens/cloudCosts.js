@@ -183,7 +183,6 @@ export function renderCloudCostsScreen(container, state, appActions, options = {
           <div class="voxel-hero-visual" style="flex-direction: column; width: 85%; max-width: 240px; gap: 6px;">
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
               ${crystalIconSvg}
-              <span style="font-size: 11px; font-weight: 700; color: #E5B83B;">VAULT BUDGET</span>
             </div>
             <div style="width: 100%;">
               ${xpProgressHtml}
@@ -192,12 +191,9 @@ export function renderCloudCostsScreen(container, state, appActions, options = {
           <div class="voxel-hero-metric ${statusClass === 'normal' ? 'status-nominal' : (statusClass === 'warning' ? 'status-warning' : 'status-alert')}">
             ${formatCurrency(todaySpend)} TODAY
           </div>
-          <div class="voxel-hero-status ${statusClass}">
-            BUDGET ${budgetStatus}
-          </div>
           <div class="voxel-hero-actions">
-            <button class="voxel-btn ${statusClass === 'normal' ? 'variant-secondary' : 'variant-caution'}" id="btn-costs-detail">
-              DETAILS ▶
+            <button class="voxel-btn ${statusClass === 'normal' ? 'variant-secondary' : 'variant-caution'} voxel-tap-arrow-btn" id="btn-costs-detail" aria-label="Details">
+              ▶
             </button>
           </div>
         </div>

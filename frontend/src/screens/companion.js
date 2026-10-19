@@ -112,6 +112,8 @@ export function renderCompanionScreen(container, state, appActions, options = {}
     });
     const dateEl = container.querySelector("#clock-date-live");
     if (dateEl) dateEl.textContent = clockData.fullDateLine;
+    const heroTime = container.querySelector("#weather-clock-time");
+    if (heroTime) heroTime.textContent = clockData.timeStr.slice(0, 5);
   }
 
   function startClock() {
@@ -177,15 +179,14 @@ export function renderCompanionScreen(container, state, appActions, options = {}
                 ${getVoxelMoonSvg(28)}
               </div>
             `}
-            <div class="voxel-clock-hero-digits clock-digits-hero" id="clock-digits-live">${clockData.timeStr}</div>
           </div>
 
           <div class="voxel-hero-metric ${isOffline ? 'status-alert' : 'status-nominal'}" id="weather-overview-badge">
-            ${isOffline ? 'WEATHER OFFLINE' : `${displayTemp} ${cond.toUpperCase()}`}
+            <span id="weather-clock-time">${clockData.timeStr.slice(0, 5)}</span> ${isOffline ? 'OFFLINE' : displayTemp}
           </div>
 
           <div class="voxel-hero-actions">
-            <button class="voxel-btn variant-secondary" id="btn-companion-detail">DETAILS ▶</button>
+            <button class="voxel-btn variant-secondary voxel-tap-arrow-btn" id="btn-companion-detail" aria-label="Details">▶</button>
           </div>
         </div>
 
@@ -217,7 +218,7 @@ export function renderCompanionScreen(container, state, appActions, options = {}
             <!-- Left: Digital Clock Card with Date -->
             <div class="wc-card wc-clock-card">
               <div class="wc-card-micro-label">LOCAL SYSTEM CLOCK</div>
-              <div class="clock-digits-hero">${clockData.timeStr}</div>
+              <div class="clock-digits-hero" id="clock-digits-live">${clockData.timeStr}</div>
               <div class="clock-date-hero" id="clock-date-live">${clockData.fullDateLine}</div>
             </div>
 

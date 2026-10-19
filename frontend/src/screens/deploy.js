@@ -37,16 +37,12 @@ export function renderDeployScreen(container, state, appActions, options = {}) {
           </div>
 
           <div class="voxel-hero-metric status-nominal" id="deploy-hero-metric">
-            ${prod.version} PROD
-          </div>
-
-          <div class="voxel-hero-status" id="deploy-hero-status">
-            ${isDeploying ? `DEPLOYING STEP ${deployStep}/4` : 'READY TO SHIP'}
+            ${prod.version} ${isDeploying ? 'SHIPPING' : 'READY'}
           </div>
 
           <div class="voxel-hero-actions">
-            <button class="voxel-btn ${isDeploying ? 'variant-caution' : 'variant-secondary'}" id="btn-deploy-detail">
-              ${isDeploying ? 'TERMINAL ▶' : 'PIPELINE ▶'}
+            <button class="voxel-btn ${isDeploying ? 'variant-caution' : 'variant-secondary'} voxel-tap-arrow-btn" id="btn-deploy-detail" aria-label="Details">
+              ▶
             </button>
           </div>
         </div>

@@ -156,57 +156,97 @@ def audit_log(action: str, target: Optional[str] = None, status: str = "SUCCESS"
 # -----------------------------------------------------------------------------
 # Authentication Decorator
 # -----------------------------------------------------------------------------
-def get_api_key() -> Optional[str]:
-    """Retrieves PULSEBOX_API_KEY from environment."""
-    key = os.environ.get("PULSEBOX_API_KEY", "").strip()
+def get_admin_key() -> Optional[str]:
+    """Retrieves PULSEBOX_ADMIN_KEY (or fallback PULSEBOX_API_KEY) from environment."""
+    key = os.environ.get("PULSEBOX_ADMIN_KEY", "").strip() or os.environ.get("PULSEBOX_API_KEY", "").strip()
     return key if key else None
 
 
-def require_api_key(f):
+def get_device_key() -> Optional[str]:
+    """Retrieves PULSEBOX_DEVICE_KEY from environment."""
+    key = os.environ.get("PULSEBOX_DEVICE_KEY", "").strip()
+    return key if key else None
+
+
+def get_api_key() -> Optional[str]:
+    """Backward compatible accessor for primary admin API key."""
+    return get_admin_key()
+
+
+def require_api_key(f=None, *, role: str = "admin"):
     """
-    Decorator requiring Authorization: Bearer <PULSEBOX_API_KEY> on protected endpoints.
-    Fails safely if key is not configured or if credentials are missing/invalid.
+    Decorator requiring Authorization: Bearer <token> on protected endpoints.
+    - role='admin' (default): Requires PULSEBOX_ADMIN_KEY or PULSEBOX_API_KEY.
+      A scoped device token attempting this endpoint is rejected with 403 Forbidden.
+    - role='device': Accepts either PULSEBOX_DEVICE_KEY or PULSEBOX_ADMIN_KEY.
+    Fails safely if no keys are configured or if credentials are missing/invalid.
     Uses timing-attack-safe secrets.compare_digest.
     Never logs or reveals expected or provided credentials.
     """
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        expected_key = get_api_key()
-        if not expected_key:
-            return jsonify({
-                "error": "Unauthorized",
-                "message": "API key authentication required. Server API key is not configured.",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }), 401
+    def decorator(func):
+        @wraps(func)
+        def decorated(*args, **kwargs):
+            admin_key = get_admin_key()
+            device_key = get_device_key()
 
-        auth_header = request.headers.get("Authorization", "").strip()
-        if not auth_header:
-            return jsonify({
-                "error": "Unauthorized",
-                "message": "Missing Authorization header. Expected 'Authorization: Bearer <key>'.",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }), 401
+            if not admin_key and not device_key:
+                return jsonify({
+                    "error": "Unauthorized",
+                    "message": "API key authentication required. Server API key is not configured.",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }), 401
 
-        parts = auth_header.split()
-        if len(parts) != 2 or parts[0].lower() != "bearer":
-            return jsonify({
-                "error": "Unauthorized",
-                "message": "Invalid Authorization header format. Expected 'Authorization: Bearer <key>'.",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }), 401
+            auth_header = request.headers.get("Authorization", "").strip()
+            if not auth_header:
+                return jsonify({
+                    "error": "Unauthorized",
+                    "message": "Missing Authorization header. Expected 'Authorization: Bearer <key>'.",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }), 401
 
-        provided_key = parts[1].strip()
-        if not secrets.compare_digest(provided_key, expected_key):
-            audit_log("AUTH_FAILURE", status="REJECTED", details="Invalid Bearer key attempt")
-            return jsonify({
-                "error": "Unauthorized",
-                "message": "Invalid API key.",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }), 401
+            parts = auth_header.split()
+            if len(parts) != 2 or parts[0].lower() != "bearer":
+                return jsonify({
+                    "error": "Unauthorized",
+                    "message": "Invalid Authorization header format. Expected 'Authorization: Bearer <key>'.",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }), 401
 
-        return f(*args, **kwargs)
+            provided_key = parts[1].strip()
 
-    return decorated
+            is_valid_admin = admin_key is not None and secrets.compare_digest(provided_key, admin_key)
+            is_valid_device = device_key is not None and secrets.compare_digest(provided_key, device_key)
+
+            if role == "device":
+                if not (is_valid_device or is_valid_admin):
+                    audit_log("AUTH_FAILURE", status="REJECTED", details="Invalid device/admin key attempt")
+                    return jsonify({
+                        "error": "Unauthorized",
+                        "message": "Invalid API key.",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }), 401
+            else:
+                if is_valid_device and not is_valid_admin:
+                    audit_log("AUTH_FORBIDDEN", status="REJECTED", details="Device token attempted admin action")
+                    return jsonify({
+                        "error": "Forbidden",
+                        "message": "Device token does not have permission to execute administrative actions.",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }), 403
+                elif not is_valid_admin:
+                    audit_log("AUTH_FAILURE", status="REJECTED", details="Invalid admin key attempt")
+                    return jsonify({
+                        "error": "Unauthorized",
+                        "message": "Invalid API key.",
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }), 401
+
+            return func(*args, **kwargs)
+        return decorated
+
+    if f is not None:
+        return decorator(f)
+    return decorator
 
 
 # -----------------------------------------------------------------------------
@@ -449,7 +489,7 @@ def get_weather() -> Tuple[Response, int]:
 
 @app.route("/record-health-check", methods=["POST"])
 @app.route("/simulate-health-check", methods=["POST"])
-@require_api_key
+@require_api_key(role="device")
 def post_record_health_check() -> Tuple[Response, int]:
     """
     POST /record-health-check

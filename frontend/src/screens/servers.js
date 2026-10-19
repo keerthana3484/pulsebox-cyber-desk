@@ -70,12 +70,9 @@ export function renderServersScreen(container, state, appActions, options = {}) 
           <div class="voxel-hero-metric ${isClusterHealthy ? 'status-nominal' : 'status-alert'}">
             ${heroMetricText}
           </div>
-          <div class="voxel-hero-status">
-            ${heroStatusText}
-          </div>
           <div class="voxel-hero-actions">
-            <button class="voxel-btn ${failedCount > 0 ? 'variant-danger' : 'variant-secondary'}" id="btn-cluster-detail">
-              DETAILS ▶
+            <button class="voxel-btn ${failedCount > 0 ? 'variant-danger' : 'variant-secondary'} voxel-tap-arrow-btn" id="btn-cluster-detail" aria-label="Details">
+              ▶
             </button>
           </div>
         </div>
@@ -86,8 +83,8 @@ export function renderServersScreen(container, state, appActions, options = {}) 
             <button class="voxel-btn variant-secondary voxel-back-btn" id="btn-back-overview">
               ◀ BACK
             </button>
-            <span class="voxel-detail-title">CLUSTER NODES (${totalCount})</span>
-            <span class="sim-tag-mini">[SIM]</span>
+            <span class="voxel-detail-title">NODE TELEMETRY</span>
+            <span class="sim-tag-mini">${heroStatusText}</span>
           </div>
 
           <div class="servers-split-view">

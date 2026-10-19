@@ -1622,9 +1622,61 @@ def test_rate_limiting_enforcement(client, monkeypatch):
     data = res_blocked.get_json()
     assert data["error"] == "Too Many Requests"
     assert "Rate limit exceeded" in data["message"]
-    _request_log.clear()
+def test_device_token_allowed_on_health_check(client, monkeypatch):
+    """Limited PULSEBOX_DEVICE_KEY is allowed on device telemetry endpoint /record-health-check."""
+    monkeypatch.setenv("PULSEBOX_ADMIN_KEY", "test_admin_key_abc123")
+    monkeypatch.setenv("PULSEBOX_DEVICE_KEY", "test_device_key_def456")
+
+    # Call with device key
+    headers_device = {"Authorization": "Bearer test_device_key_def456"}
+    res = client.post("/record-health-check", json={"server_id": "srv-api", "status": "online"}, headers=headers_device)
+    assert res.status_code == 200
+    assert res.get_json()["status"] == "online"
+
+    # Call with admin key also succeeds
+    headers_admin = {"Authorization": "Bearer test_admin_key_abc123"}
+    res_admin = client.post("/record-health-check", json={"server_id": "srv-api", "status": "online"}, headers=headers_admin)
+    assert res_admin.status_code == 200
 
 
+def test_device_token_forbidden_on_admin_actions(client, monkeypatch):
+    """Scoped PULSEBOX_DEVICE_KEY is rejected with 403 Forbidden on state-mutating admin actions."""
+    monkeypatch.setenv("PULSEBOX_ADMIN_KEY", "test_admin_key_abc123")
+    monkeypatch.setenv("PULSEBOX_DEVICE_KEY", "test_device_key_def456")
+
+    headers_device = {"Authorization": "Bearer test_device_key_def456"}
+
+    admin_endpoints = [
+        ("/simulate-failure", {"server_id": "srv-api"}),
+        ("/restore", {"server_id": "srv-api"}),
+        ("/reset", {}),
+        ("/costs/settings", {"monthly_budget": 3000.0}),
+    ]
+
+    for url, payload in admin_endpoints:
+        res = client.post(url, json=payload, headers=headers_device)
+        assert res.status_code == 403, f"Expected 403 Forbidden on {url} with device token, got {res.status_code}"
+        data = res.get_json()
+        assert data["error"] == "Forbidden"
+        assert "Device token does not have permission" in data["message"]
 
 
+def test_admin_token_allowed_on_admin_actions(client, monkeypatch):
+    """PULSEBOX_ADMIN_KEY has full permission on all state-mutating actions."""
+    monkeypatch.setenv("PULSEBOX_ADMIN_KEY", "test_admin_key_abc123")
+    monkeypatch.setenv("PULSEBOX_DEVICE_KEY", "test_device_key_def456")
+
+    headers_admin = {"Authorization": "Bearer test_admin_key_abc123"}
+
+    res1 = client.post("/simulate-failure", json={"server_id": "srv-api"}, headers=headers_admin)
+    assert res1.status_code == 200
+
+    res2 = client.post("/restore", json={"server_id": "srv-api"}, headers=headers_admin)
+    assert res2.status_code == 200
+
+    res3 = client.post("/costs/settings", json={"monthly_budget": 2800.0}, headers=headers_admin)
+    assert res3.status_code == 200
+
+    res4 = client.post("/reset", headers=headers_admin)
+    assert res4.status_code == 200
 

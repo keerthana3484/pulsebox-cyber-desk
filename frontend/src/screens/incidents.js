@@ -150,14 +150,11 @@ export function renderIncidentsScreen(container, state, appActions, options = {}
             </div>
           </div>
           <div class="voxel-hero-metric ${isNominal ? 'status-nominal' : 'status-alert'}">
-            ${isNominal ? 'ALL NOMINAL' : `${openCount} ACTIVE OUTAGE`}
-          </div>
-          <div class="voxel-hero-status ${isNominal ? '' : 'status-alert'}">
-            ${isNominal ? '0 ALERTS' : 'CRITICAL ALERT'}
+            ${isNominal ? '0 ALERTS' : `${openCount} ALERT${openCount === 1 ? '' : 'S'}`}
           </div>
           <div class="voxel-hero-actions">
-            <button class="voxel-btn ${isNominal ? 'variant-secondary' : 'variant-danger'}" id="btn-incidents-detail">
-              ${isNominal ? 'HISTORY ▶' : 'TRIAGE ▶'}
+            <button class="voxel-btn ${isNominal ? 'variant-secondary' : 'variant-danger'} voxel-tap-arrow-btn" id="btn-incidents-detail" aria-label="Details">
+              ▶
             </button>
           </div>
         </div>

@@ -2,7 +2,7 @@
  * PulseBox Cyber Desk — Reusable Voxel UI Components & Procedural Sprites
  * 
  * Strict 8px modular grid on 320x240 canvas.
- * 100% original pixel art procedural SVG sprites (zero external Mojang/Minecraft IP).
+ * 100% original pixel art procedural SVG sprites (zero external sandbox game IP).
  * Uses tokens from frontend/src/tokens.js.
  */
 

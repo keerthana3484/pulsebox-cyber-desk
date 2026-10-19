@@ -9,8 +9,8 @@ Every future implementation step, component, screen, asset, and test modificatio
 ## 1. Core Visual Style: Original Voxel / Blocky Sandbox
 
 - **Originality & Clean IP:** All graphics, icons, sprites, fonts, and UI elements must be 100% original.
-- **Strict Prohibition:** Absolutely NO Mojang or Minecraft assets, textures, sounds, logos, or typography may be used or referenced.
-- **Naming Rule:** The term "Minecraft" must NEVER appear in UI text, code identifiers, comments, documentation, or filenames.
+- **Strict Prohibition:** Absolutely NO third-party sandbox game assets, commercial block-building textures, sounds, logos, or typography may be used or referenced.
+- **Naming Rule:** Only original "voxel" or "sandbox game inspired" terminology may be used across UI text, code identifiers, comments, documentation, and filenames.
 - **Aesthetic:** Clean, retro-voxel, chunk-based sandbox aesthetic with crisp hard pixel edges (`shape-rendering: crispEdges`), isometric or flat orthogonal block projections, chunky geometric frames, and zero smooth vector curves or anti-aliased blur.
 
 ---
@@ -73,8 +73,9 @@ All screens, icons, sprites, and text must select from a unified maximum palette
 
 ### 3.2 Strict Text & Word Limits
 - **Maximum 3 text elements** per screen (excluding the hotbar).
-- **Maximum 12 words total** on the entire display per screen (excluding the hotbar).
-- Labels must be concise: **1 to 3 words maximum** (e.g., `ALL NOMINAL`, `API DOWN`, `$64 TODAY`).
+- **Maximum 5 words total** per screen on overview (excluding the hotbar).
+- Labels must be concise: **1 to 2 words maximum** (e.g., `SYS NOMINAL`, `6/6 ONLINE`, `$64.20 TODAY`).
+- Overview detail triggers use a small tap arrow (`▶`) icon rather than long verbose labels.
 - Visuals First: Icons, voxel blocks, color transitions, and mascot facial expressions must convey meaning before reading any text.
 
 ### 3.3 Zero Clutter on the Device

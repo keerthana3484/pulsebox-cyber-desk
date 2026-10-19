@@ -158,8 +158,8 @@ function extractOverviewMetrics(html) {
 
 async function runAudit() {
   console.log("================================================================================");
-  console.log("   PULSEBOX CYBER DESK — 12-WORD LIMIT & HERO ELEMENT COMPLIANCE AUDIT          ");
-  console.log("   Target Canvas: 320x240 | Max Text Elements: 3 | Max Words: 12 (Overview)     ");
+  console.log("   PULSEBOX CYBER DESK — 5-WORD LIMIT & HERO ELEMENT COMPLIANCE AUDIT           ");
+  console.log("   Target Canvas: 320x240 | Max Text Elements: 3 | Max Words: 5 (Overview)      ");
   console.log("================================================================================\n");
 
   const screens = [
@@ -189,7 +189,7 @@ async function runAudit() {
     const metrics = extractOverviewMetrics(container.innerHTML);
 
     const isElementCompliant = metrics.elementCount <= 3;
-    const isWordCompliant = metrics.wordCount <= 12;
+    const isWordCompliant = metrics.wordCount <= 5;
     const isPass = isElementCompliant && isWordCompliant;
 
     if (!isPass) allCompliant = false;
@@ -202,7 +202,7 @@ async function runAudit() {
       elementsCount: metrics.elementCount,
       wordCount: metrics.wordCount,
       snippet: metrics.rawText,
-      status: isPass ? "PASS (<=12 words)" : "FAIL (>12 words)",
+      status: isPass ? "PASS (<=5 words)" : "FAIL (>5 words)",
     });
 
     if (typeof cleanup === "function") cleanup();
@@ -241,9 +241,9 @@ async function runAudit() {
 
   console.log("================================================================================");
   if (allCompliant) {
-    console.log("  >>> RESULT: ALL 8 SCREENS STRICTLY PASS THE 12-WORD LIMIT! (0 BREAKS) <<<    ");
+    console.log("  >>> RESULT: ALL 8 SCREENS STRICTLY PASS THE 5-WORD LIMIT! (0 BREAKS) <<<     ");
   } else {
-    console.error("  >>> RESULT: ONE OR MORE SCREENS BREAK THE 12-WORD LIMIT! <<<                ");
+    console.error("  >>> RESULT: ONE OR MORE SCREENS BREAK THE 5-WORD LIMIT! <<<                 ");
     process.exit(1);
   }
   console.log("================================================================================\n");
