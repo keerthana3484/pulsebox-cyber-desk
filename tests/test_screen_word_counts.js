@@ -17,6 +17,7 @@ import { renderCompanionScreen } from "../frontend/src/screens/companion.js";
 import { renderFocusTimerScreen } from "../frontend/src/screens/focusTimer.js";
 import { renderSettingsScreen } from "../frontend/src/screens/settings.js";
 import { createMockState } from "../frontend/src/mockData.js";
+import { focusTimerService } from "../frontend/src/timerService.js";
 
 // Minimal DOM Element emulation for Node.js
 class MockElement {
@@ -158,26 +159,27 @@ function extractOverviewMetrics(html) {
 
 async function runAudit() {
   console.log("================================================================================");
-  console.log("   PULSEBOX CYBER DESK — 5-WORD LIMIT & HERO ELEMENT COMPLIANCE AUDIT           ");
+  console.log("   PULSEBOX CYBER DESK — 5-WORD LIMIT & DYNAMIC STATE AUDIT                     ");
   console.log("   Target Canvas: 320x240 | Max Text Elements: 3 | Max Words: 5 (Overview)      ");
   console.log("================================================================================\n");
 
-  const screens = [
-    { id: "home", name: "System Status", render: renderHomeScreen, hero: "PulseBot + Shield Visual" },
-    { id: "servers", name: "Cluster Health", render: renderServersScreen, hero: "Heart Bar + PulseBot" },
-    { id: "incidents", name: "Incident Log", render: renderIncidentsScreen, hero: "PulseBot + Shield/Potion" },
-    { id: "costs", name: "Cloud Costs", render: renderCloudCostsScreen, hero: "Crystal + XP Level Bar" },
-    { id: "deploy", name: "Release Pipeline", render: renderDeployScreen, hero: "Voxel Rocket + Compass" },
-    { id: "companion", name: "Weather + Clock", render: renderCompanionScreen, hero: "Day/Night Sky + Clock Digits" },
-    { id: "focusTimer", name: "Focus Timer", render: renderFocusTimerScreen, hero: "Digital Timer + Progress Bar" },
-    { id: "settings", name: "Device Config", render: renderSettingsScreen, hero: "Voxel Wrench + Battery" },
+  const nominalScreens = [
+    { id: "home", name: "System Status", render: renderHomeScreen, hero: "PulseBot + Shield Visual", expected: "ALL GOOD" },
+    { id: "servers", name: "Cluster Health", render: renderServersScreen, hero: "Heart Bar + PulseBot", expected: "6 HAPPY" },
+    { id: "incidents", name: "Incident Log", render: renderIncidentsScreen, hero: "PulseBot + Shield/Potion", expected: "ALL CLEAR" },
+    { id: "costs", name: "Cloud Costs", render: renderCloudCostsScreen, hero: "Crystal + XP Level Bar", expected: "ON TRACK" },
+    { id: "deploy", name: "Release Pipeline", render: renderDeployScreen, hero: "Voxel Rocket + Compass", expected: "LET'S SHIP" },
+    { id: "companion", name: "Weather + Clock", render: renderCompanionScreen, hero: "Day/Night Sky + Clock Digits", expected: "72°F CLOUDY" },
+    { id: "focusTimer", name: "Focus Timer", render: renderFocusTimerScreen, hero: "Digital Timer + Progress Bar", expected: "FOCUS TIME" },
+    { id: "settings", name: "Device Config", render: renderSettingsScreen, hero: "Voxel Wrench + Battery", expected: "SETTINGS" },
   ];
 
   let allCompliant = true;
   const results = [];
 
-  for (let i = 0; i < screens.length; i++) {
-    const scr = screens[i];
+  console.log("[PART 1: NOMINAL OVERVIEW LABELS & WORD COUNT]");
+  for (let i = 0; i < nominalScreens.length; i++) {
+    const scr = nominalScreens[i];
     const container = new MockContainer();
     const state = createMockState();
     state.backendConnected = true;
@@ -190,7 +192,8 @@ async function runAudit() {
 
     const isElementCompliant = metrics.elementCount <= 3;
     const isWordCompliant = metrics.wordCount <= 5;
-    const isPass = isElementCompliant && isWordCompliant;
+    const hasExpectedLabel = metrics.rawText.includes(scr.expected);
+    const isPass = isElementCompliant && isWordCompliant && hasExpectedLabel;
 
     if (!isPass) allCompliant = false;
 
@@ -202,7 +205,8 @@ async function runAudit() {
       elementsCount: metrics.elementCount,
       wordCount: metrics.wordCount,
       snippet: metrics.rawText,
-      status: isPass ? "PASS (<=5 words)" : "FAIL (>5 words)",
+      expected: scr.expected,
+      status: isPass ? "PASS (<=5 words)" : "FAIL",
     });
 
     if (typeof cleanup === "function") cleanup();
@@ -210,10 +214,10 @@ async function runAudit() {
 
   // Print Formatted Report Table
   console.log(
-    "| Slot | Screen ID  | Screen Name        | Hero Element               | Elements | Words | Status              |"
+    "| Slot | Screen ID  | Screen Name        | Hero Element               | Elements | Words | Label Match | Status              |"
   );
   console.log(
-    "|------|------------|--------------------|----------------------------|----------|-------|---------------------|"
+    "|------|------------|--------------------|----------------------------|----------|-------|-------------|---------------------|"
   );
 
   for (const r of results) {
@@ -222,28 +226,224 @@ async function runAudit() {
     const nameStr = r.name.padEnd(18);
     const heroStr = r.hero.padEnd(26);
     const elemStr = `${r.elementsCount}/3`.padEnd(8);
-    const wordStr = `${r.wordCount}/12`.padEnd(5);
+    const wordStr = `${r.wordCount}/5`.padEnd(5);
+    const matchStr = (r.snippet.includes(r.expected) ? "YES" : "NO").padEnd(11);
     const statStr = r.status.padEnd(19);
-    console.log(`| ${slotStr} | ${idStr} | ${nameStr} | ${heroStr} | ${elemStr} | ${wordStr} | ${statStr} |`);
+    console.log(`| ${slotStr} | ${idStr} | ${nameStr} | ${heroStr} | ${elemStr} | ${wordStr} | ${matchStr} | ${statStr} |`);
   }
 
-  console.log("\n--------------------------------------------------------------------------------");
-  console.log("SCREEN OVERVIEW TEXT AUDIT BREAKDOWN:");
-  console.log("--------------------------------------------------------------------------------");
-  for (const r of results) {
-    console.log(`[Slot ${r.slot}: ${r.name}]`);
-    console.log(`  Hero: ${r.hero}`);
-    console.log(`  Word count: ${r.wordCount} words (Limit: 12 words)`);
-    console.log(`  Text elements: ${r.elementsCount} elements (Limit: 3 elements)`);
-    console.log(`  Content: "${r.snippet}"`);
-    console.log("");
+  console.log("\n[PART 2: DYNAMIC FAILURE, WARNING, AND BREAK STATE TRANSITIONS]");
+  const dynamicTests = [];
+
+  // 1. Home Screen: Degraded state -> "NEEDS LOVE"
+  {
+    const container = new MockContainer();
+    const state = createMockState();
+    state.backendConnected = true;
+    state.system.overallHealth = "DEGRADED";
+    state.system.failedServerCount = 1;
+    const actions = createMockAppActions();
+    const cleanup = renderHomeScreen(container, state, actions, { initialShowDetail: false });
+    const metrics = extractOverviewMetrics(container.innerHTML);
+    const pass = metrics.rawText.includes("NEEDS LOVE") && metrics.wordCount <= 5;
+    if (!pass) allCompliant = false;
+    dynamicTests.push({ test: "Home Degraded State", label: "NEEDS LOVE", snippet: metrics.rawText, words: metrics.wordCount, pass });
+    if (typeof cleanup === "function") cleanup();
   }
 
-  console.log("================================================================================");
+  // 2. Home Screen: Offline state -> "OFFLINE"
+  {
+    const container = new MockContainer();
+    const state = createMockState();
+    state.backendConnected = false;
+    const actions = createMockAppActions();
+    const cleanup = renderHomeScreen(container, state, actions, { initialShowDetail: false });
+    const metrics = extractOverviewMetrics(container.innerHTML);
+    const pass = metrics.rawText.includes("OFFLINE") && metrics.wordCount <= 5;
+    if (!pass) allCompliant = false;
+    dynamicTests.push({ test: "Home Offline State", label: "OFFLINE", snippet: metrics.rawText, words: metrics.wordCount, pass });
+    if (typeof cleanup === "function") cleanup();
+  }
+
+  // 3. Servers: 1 node failed -> "1 DOWN"
+  {
+    const container = new MockContainer();
+    const state = createMockState();
+    state.backendConnected = true;
+    state.servers[0].status = "failed";
+    const actions = createMockAppActions();
+    const cleanup = renderServersScreen(container, state, actions, { initialShowDetail: false });
+    const metrics = extractOverviewMetrics(container.innerHTML);
+    const pass = metrics.rawText.includes("1 DOWN") && metrics.wordCount <= 5;
+    if (!pass) allCompliant = false;
+    dynamicTests.push({ test: "Servers 1 Node Down", label: "1 DOWN", snippet: metrics.rawText, words: metrics.wordCount, pass });
+    if (typeof cleanup === "function") cleanup();
+  }
+
+  // 4. Servers: 2 nodes failed -> "2 DOWN"
+  {
+    const container = new MockContainer();
+    const state = createMockState();
+    state.backendConnected = true;
+    state.servers[0].status = "failed";
+    state.servers[1].status = "failed";
+    const actions = createMockAppActions();
+    const cleanup = renderServersScreen(container, state, actions, { initialShowDetail: false });
+    const metrics = extractOverviewMetrics(container.innerHTML);
+    const pass = metrics.rawText.includes("2 DOWN") && metrics.wordCount <= 5;
+    if (!pass) allCompliant = false;
+    dynamicTests.push({ test: "Servers 2 Nodes Down", label: "2 DOWN", snippet: metrics.rawText, words: metrics.wordCount, pass });
+    if (typeof cleanup === "function") cleanup();
+  }
+
+  // 5. Incidents: Active open outage -> "UH OH"
+  {
+    const container = new MockContainer();
+    const state = createMockState();
+    state.backendConnected = true;
+    const actions = createMockAppActions();
+    actions.api.getIncidents = async () => [
+      { id: "INC-001", server_id: "srv-api", server_name: "API Gateway", severity: "CRITICAL", status: "OPEN" }
+    ];
+    const cleanup = renderIncidentsScreen(container, state, actions, { initialShowDetail: false });
+    await new Promise(r => setTimeout(r, 100));
+    const metrics = extractOverviewMetrics(container.innerHTML);
+    const pass = metrics.rawText.includes("UH OH") && metrics.wordCount <= 5;
+    if (!pass) allCompliant = false;
+    dynamicTests.push({ test: "Incidents Active Outage", label: "UH OH", snippet: metrics.rawText, words: metrics.wordCount, pass });
+    if (typeof cleanup === "function") cleanup();
+  }
+
+  // 6. Costs: Warning threshold -> "HEADS UP"
+  {
+    const container = new MockContainer();
+    const state = createMockState();
+    state.backendConnected = true;
+    const actions = createMockAppActions();
+    actions.api.getCosts = async () => ({
+      today_spend: 92.00,
+      month_spend: 2350.00,
+      monthly_budget: 2500.00,
+      budget_status: "WARNING",
+      daily_trend: [],
+      breakdown: []
+    });
+    const cleanup = renderCloudCostsScreen(container, state, actions, { initialShowDetail: false });
+    await new Promise(r => setTimeout(r, 100));
+    const metrics = extractOverviewMetrics(container.innerHTML);
+    const pass = metrics.rawText.includes("HEADS UP") && metrics.wordCount <= 5;
+    if (!pass) allCompliant = false;
+    dynamicTests.push({ test: "Costs Warning Threshold", label: "HEADS UP", snippet: metrics.rawText, words: metrics.wordCount, pass });
+    if (typeof cleanup === "function") cleanup();
+  }
+
+  // 7. Costs: Budget Exceeded -> "HEADS UP"
+  {
+    const container = new MockContainer();
+    const state = createMockState();
+    state.backendConnected = true;
+    const actions = createMockAppActions();
+    actions.api.getCosts = async () => ({
+      today_spend: 150.00,
+      month_spend: 2650.00,
+      monthly_budget: 2500.00,
+      budget_status: "BUDGET EXCEEDED",
+      daily_trend: [],
+      breakdown: []
+    });
+    const cleanup = renderCloudCostsScreen(container, state, actions, { initialShowDetail: false });
+    await new Promise(r => setTimeout(r, 100));
+    const metrics = extractOverviewMetrics(container.innerHTML);
+    const pass = metrics.rawText.includes("HEADS UP") && metrics.wordCount <= 5;
+    if (!pass) allCompliant = false;
+    dynamicTests.push({ test: "Costs Budget Exceeded", label: "HEADS UP", snippet: metrics.rawText, words: metrics.wordCount, pass });
+    if (typeof cleanup === "function") cleanup();
+  }
+
+  // 8. Deploy: Shipping in-flight -> "SHIPPING"
+  {
+    const container = new MockContainer();
+    const state = createMockState();
+    const actions = createMockAppActions();
+    const cleanup = renderDeployScreen(container, state, actions, { initialShowDetail: false, initialDeploying: true });
+    const metrics = extractOverviewMetrics(container.innerHTML);
+    const pass = metrics.rawText.includes("SHIPPING") && metrics.wordCount <= 5;
+    if (!pass) allCompliant = false;
+    dynamicTests.push({ test: "Deploy Shipping State", label: "SHIPPING", snippet: metrics.rawText, words: metrics.wordCount, pass });
+    if (typeof cleanup === "function") cleanup();
+  }
+
+  // 9. Weather: Live condition word dynamically extracted -> e.g. "68°F RAIN"
+  {
+    const container = new MockContainer();
+    const state = createMockState();
+    const actions = createMockAppActions();
+    actions.api.getWeather = async () => ({
+      location: "LIVE CITY",
+      condition: "Thunderstorm Rain",
+      temperature_f: 68,
+      feels_like_f: 68,
+      humidity_pct: 85,
+      wind_speed_mph: 12.0,
+      wind_direction: "NE",
+      pressure_hpa: 1008,
+      timestamp: new Date().toISOString()
+    });
+    const cleanup = renderCompanionScreen(container, state, actions, { initialShowDetail: false });
+    await new Promise(r => setTimeout(r, 100));
+    const metrics = extractOverviewMetrics(container.innerHTML);
+    const pass = metrics.rawText.includes("68°F RAIN") && metrics.wordCount <= 5;
+    if (!pass) allCompliant = false;
+    dynamicTests.push({ test: "Weather Live Condition Dynamic", label: "68°F RAIN", snippet: metrics.rawText, words: metrics.wordCount, pass });
+    if (typeof cleanup === "function") cleanup();
+  }
+
+  // 10. Weather: Offline -> "OFFLINE"
+  {
+    const container = new MockContainer();
+    const state = createMockState();
+    const actions = createMockAppActions();
+    actions.api.getWeather = async () => { throw new Error("Connection refused"); };
+    const cleanup = renderCompanionScreen(container, state, actions, { initialShowDetail: false });
+    await new Promise(r => setTimeout(r, 100));
+    const metrics = extractOverviewMetrics(container.innerHTML);
+    const pass = metrics.rawText.includes("OFFLINE") && metrics.wordCount <= 5;
+    if (!pass) allCompliant = false;
+    dynamicTests.push({ test: "Weather Offline State", label: "OFFLINE", snippet: metrics.rawText, words: metrics.wordCount, pass });
+    if (typeof cleanup === "function") cleanup();
+  }
+
+  // 11. Focus Timer: Break Mode -> "CHILL TIME"
+  {
+    // Skip to break mode
+    focusTimerService.requestSkip(false);
+    focusTimerService.confirmPendingAction();
+
+    const container = new MockContainer();
+    const state = createMockState();
+    const actions = createMockAppActions();
+    const cleanup = renderFocusTimerScreen(container, state, actions, { initialShowDetail: false });
+    const metrics = extractOverviewMetrics(container.innerHTML);
+    const pass = metrics.rawText.includes("CHILL TIME") && metrics.wordCount <= 5;
+    if (!pass) allCompliant = false;
+    dynamicTests.push({ test: "Focus Break Mode", label: "CHILL TIME", snippet: metrics.rawText, words: metrics.wordCount, pass });
+    if (typeof cleanup === "function") cleanup();
+
+    // Reset back to focus mode
+    focusTimerService.requestSkip(false);
+    focusTimerService.confirmPendingAction();
+  }
+
+  for (const dt of dynamicTests) {
+    const mark = dt.pass ? "✓ PASS" : "✗ FAIL";
+    console.log(`  ${mark}: [${dt.test}] -> Expected "${dt.label}" in "${dt.snippet}" (${dt.words} words)`);
+  }
+
+  console.log("\n================================================================================");
   if (allCompliant) {
-    console.log("  >>> RESULT: ALL 8 SCREENS STRICTLY PASS THE 5-WORD LIMIT! (0 BREAKS) <<<     ");
+    console.log("  >>> RESULT: ALL SCREENS STRICTLY PASS WORD LIMIT & DYNAMIC STATE AUDIT! <<<   ");
   } else {
-    console.error("  >>> RESULT: ONE OR MORE SCREENS BREAK THE 5-WORD LIMIT! <<<                 ");
+    console.error("  >>> RESULT: ONE OR MORE SCREENS FAILED WORD LIMIT OR DYNAMIC STATE AUDIT! <<< ");
     process.exit(1);
   }
   console.log("================================================================================\n");

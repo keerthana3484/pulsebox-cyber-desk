@@ -25,9 +25,9 @@ The project strictly adheres to nine core security invariants:
 
 1. **Zero Secret Exposure in Frontend Code:**
    - The backend `PULSEBOX_API_KEY` is never accessible to browser JavaScript, never stored in `localStorage` or `sessionStorage`, and never injected into client-side environment variables bundled by Vite.
-2. **Role-Based Token Authentication (Admin vs Scoped Device Token):**
+2. **Role-Based Token Authentication (Admin vs Optional Scoped Device Token):**
    - Every endpoint that alters system state (`/simulate-failure`, `/restore`, `/reset`, `/costs/settings`) requires administrative credentials (`PULSEBOX_ADMIN_KEY` or `PULSEBOX_API_KEY`).
-   - The physical ESP32 device uses a separate, strictly scoped **Device Token** (`PULSEBOX_DEVICE_KEY`). The device token is permitted ONLY to submit telemetry (`/record-health-check`); any attempt to trigger administrative state changes with the device token is rejected with HTTP 403 Forbidden.
+   - The backend architecture is prepared for a separate, strictly scoped **Device Token** (`PULSEBOX_DEVICE_KEY`, optional/future). When enabled, a device token is permitted ONLY to submit telemetry (`/record-health-check`); any attempt to trigger administrative state changes with the device token is rejected with HTTP 403 Forbidden. Read-only endpoints (`/state`) require no token. (Note: The current ESP32 firmware in `main.cpp` runs offline with local mock/demo data and makes no network requests).
    - Token comparisons use constant-time verification (`secrets.compare_digest`) to prevent timing attacks.
 3. **Loopback-Only by Default (Explicit LAN Opt-In):**
    - The Flask backend binds strictly to `127.0.0.1` (localhost).
@@ -40,9 +40,9 @@ The project strictly adheres to nine core security invariants:
    - Request bodies are capped at 16 KB (`MAX_CONTENT_LENGTH = 16 * 1024`).
    - String inputs (`server_id`) enforce regex `^[a-zA-Z0-9_\-]{1,64}$`.
    - Numeric inputs (`monthly_budget`) reject booleans, negative numbers, zero, `NaN`, `Infinity`, and numbers exceeding $1,000,000.00.
-7. **Firmware TLS Integrity (No Insecure TLS):**
-   - The ESP32 firmware strictly prohibits calling `WiFiClientSecure::setInsecure()`.
-   - All HTTPS requests must validate against a pinned Root CA certificate (ISRG Root X1 in `ca_cert.h`).
+7. **Firmware TLS Integrity Preparedness (No Insecure TLS):**
+   - The ESP32 firmware repository includes a pinned Root CA certificate (ISRG Root X1 in `ca_cert.h`) prepared for planned Wi-Fi HTTPS client integration.
+   - Calling `WiFiClientSecure::setInsecure()` is strictly forbidden in any future network implementations.
 8. **Hold-to-Confirm for Destructive Actions & Audit Logging:**
    - High-impact device actions (factory reset, power shutdown) require holding the button for at least 1.0 to 1.5 seconds.
    - All state mutations and administrative actions generate structured `[AUDIT_LOG]` entries.
@@ -68,11 +68,11 @@ The project strictly adheres to nine core security invariants:
                                                                ^
                                                                | (Explicit LAN Opt-In Only)
 +-------------------------------------------------------------|-----------+
-| TRUST BOUNDARY 2: Local Wi-Fi / LAN                         |           |
+| TRUST BOUNDARY 2: Local Wi-Fi / LAN (Planned Future Sync)   |           |
 |                                                             v           |
-|  [Physical ESP32 Desk Display] <==== WPA2/WPA3 Wi-Fi =======+           |
-|   - ILI9341 SPI Display              (Scoped Device Token)              |
-|   - XPT2046 Touchscreen                                                 |
+|  [Physical ESP32 Desk Display] <==== Prepared Wi-Fi HTTPS ==+           |
+|   - ILI9341 SPI Display (Offline Mock Data Today)                       |
+|   - Planned: HTTPS GET /state with Pinned Root CA                       |
 +-------------------------------------------------------------------------+
                                                                |
 +--------------------------------------------------------------v----------+
@@ -91,7 +91,7 @@ The project strictly adheres to nine core security invariants:
 2. **Untrusted LAN Adjacent Device (Network Eavesdropper):**
    - *Vector:* Compromised IoT device or guest on the same Wi-Fi network.
    - *Goal:* Intercept tokens or spoof backend responses to alter data on the desk fixture.
-   - *Mitigation:* Backend defaults to `127.0.0.1` (invisible to LAN); physical devices use limited `PULSEBOX_DEVICE_KEY` that cannot alter state; firmware uses pinned Root CA verification for TLS connections.
+   - *Mitigation:* Backend defaults to `127.0.0.1` (invisible to LAN); physical firmware operates offline today, and future Wi-Fi integration is prepared with an optional `PULSEBOX_DEVICE_KEY` that cannot alter state, plus a pinned Root CA header for TLS connections.
 3. **Desk Passerby / Accidental Physical Touch:**
    - *Vector:* Inadvertent touch or curious coworker tapping the physical desk display.
    - *Goal:* Accidental power-off, focus timer cancellation, or settings wipe.
@@ -125,8 +125,8 @@ The project strictly adheres to nine core security invariants:
 While the project has been hardened, operators should be aware of the following residual risks:
 
 1. **Plain HTTP LAN Token Exposure (CRITICAL RISK when LAN Mode is Active):**
-   - **The Vulnerability:** If `PULSEBOX_ALLOW_LAN=true` is enabled to connect an ESP32 or external device over unencrypted HTTP (`http://<ip>:5000`), all HTTP headers—including `Authorization: Bearer <token>`—are transmitted in cleartext. Anyone with packet capture access on the local Wi-Fi / LAN (e.g. via Wireshark or ARP spoofing) can read the token.
-   - **Implemented Mitigation (Device-Token Isolation):** The ESP32 is provisioned with a scoped `PULSEBOX_DEVICE_KEY` rather than the `PULSEBOX_ADMIN_KEY`. Even if an attacker sniffs the device token off the local Wi-Fi, they CANNOT trigger fake outages, restore nodes, wipe data, or alter budgets (mutations return 403 Forbidden).
+   - **The Vulnerability:** If `PULSEBOX_ALLOW_LAN=true` is enabled to connect an external device over unencrypted HTTP (`http://<ip>:5000`), all HTTP headers—including `Authorization: Bearer <token>`—are transmitted in cleartext. Anyone with packet capture access on the local Wi-Fi / LAN (e.g. via Wireshark or ARP spoofing) can read the token.
+   - **Implemented Mitigation (Device-Token Isolation & Future Scoping):** The backend is prepared with an optional scoped `PULSEBOX_DEVICE_KEY` rather than the `PULSEBOX_ADMIN_KEY`. Even if an attacker sniffs a future device token off the local Wi-Fi, they CANNOT trigger fake outages, restore nodes, wipe data, or alter budgets (mutations return 403 Forbidden). Note that read-only `GET /state` requires no token, and the current firmware operates offline with mock/demo data.
    - **Remaining Risk:** An attacker who intercepts the device token can forge health check telemetry (`/record-health-check`) to report false server states.
    - **Operational Recommendation:** Do NOT enable LAN mode on untrusted public/office Wi-Fi networks. If LAN access is required, put the Flask backend behind a reverse proxy (e.g., Caddy, Nginx) terminating local TLS/HTTPS, or isolate IoT desk devices on a dedicated VLAN.
 2. **Physical Device Tampering (Flash Firmware Extraction):**

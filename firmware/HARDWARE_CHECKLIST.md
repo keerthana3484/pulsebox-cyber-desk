@@ -2,6 +2,11 @@
 
 Before connecting any jumper wires or writing code, complete this beginner-friendly inspection. Different manufacturers produce visually similar modules with different pinouts, logic levels, or chips. Verifying these details prevents damaged hardware and hours of troubleshooting.
 
+> [!NOTE]
+> **Firmware Data & Network Status Today:**
+> The current ESP32 firmware (`firmware/src/main.cpp`) operates entirely offline rendering local mock/demo data for verifying display rendering, dirty-region redraws, touch coordinates, and Day/Night palettes on real glass. It makes **zero network or HTTP requests**.
+> Live Wi-Fi connectivity, HTTPS client requests (`GET /state`) with pinned Root CA (`ca_cert.h`), and backend synchronization are planned for future roadmap milestones. Any device token (`PULSEBOX_DEVICE_KEY`) is optional/future, only needed if the device ever posts telemetry data.
+
 ---
 
 ## 1. ESP32 Development Board Inspection

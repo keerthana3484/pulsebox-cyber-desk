@@ -46,7 +46,11 @@
 
 PulseBox is a hybrid embedded IoT fixture and developer dashboard built for engineers who want physical ambient awareness of their systems without distracting browser tabs.
 
-Sitting on your desk, PulseBox couples an **ESP32 microcontroller** and **2.8-inch 320×240 touchscreen display** with a hardened **Python Flask backend** and a **pixel-accurate web embedded simulator**. It reports real-time microservice health, incident alerts, cloud infrastructure burn rates, release pipeline states, weather, and focus sprints through an original voxel / sandbox visual language.
+Sitting on your desk, PulseBox couples an **ESP32 microcontroller** and **2.8-inch 320×240 touchscreen display** with a hardened **Python Flask backend** and a **pixel-accurate web embedded simulator**. It translates real-time microservice health, incident alerts, cloud infrastructure burn rates, release pipeline states, weather, and focus sprints into an original voxel / sandbox visual language.
+
+> [!NOTE]
+> **Current Firmware Status:**
+> Today, the ESP32 firmware (`firmware/src/main.cpp`) operates entirely offline rendering local mock/demo data to validate 320×240 screen layouts, dirty-region partial redraws, touch coordinates, and Day/Night palettes on real glass without network dependencies. Live Wi-Fi client synchronization over HTTPS with pinned CA is prepared and outlined in the Roadmap.
 
 ### Key Capabilities
 - **Glanceable Telemetry:** Designed for comprehension in under 1 second from 3 feet away.
@@ -54,24 +58,24 @@ Sitting on your desk, PulseBox couples an **ESP32 microcontroller** and **2.8-in
 - **Dual Indexed Palettes:** 16-color **Day Palette** (earth, loam, grass, sunlight) and 16-color **Night Palette** (low-glare obsidian, neon mint, plasma orange).
 - **100% Original IP:** Handcrafted procedural sprites and voxel geometries—strictly zero third-party game assets.
 - **Hardware-Software Mirroring:** Unified tokens generate both web CSS custom properties and 16-bit RGB565 C++ macros for TFT displays.
-- **Enterprise-Grade Security:** Loopback by default, Bearer token auth for mutations, CORS lockdown, rate limiting, and pinned Root CA TLS.
+- **Enterprise-Grade Security:** Loopback by default, Bearer token auth for mutations, CORS lockdown, rate limiting, and pinned Root CA TLS preparedness.
 
 ---
 
 ## 📸 Screen Gallery
 
-Each screen follows the strict **Hero Element Rule** (readable in <1 second) with **maximum 3 text elements and 5 words or fewer** on overview (`SYS NOMINAL ▶`, `6/6 ONLINE ▶`, `0 ALERTS ▶`, `$64.20 TODAY ▶`, etc.). Tap the arrow (`▶`) or hero element on any screen to enter its high-density **Detail View**.
+Each screen follows the strict **Hero Element Rule** (readable in <1 second) with **maximum 3 text elements and 5 words or fewer** on overview (`ALL GOOD ▶`, `6 HAPPY ▶`, `ALL CLEAR ▶`, `ON TRACK ▶`, `LET'S SHIP ▶`, `72°F CLOUDY ▶`, `FOCUS TIME ▶`, `SETTINGS ▶`). Tap the arrow (`▶`) or hero element on any screen to enter its high-density **Behind-The-Tap Detail View**.
 
 | Screen | Hero Overview | Behind-The-Tap Detail View | Core Functionality |
 | :--- | :---: | :---: | :--- |
-| **1. System Status** | ![Home Overview](docs/screenshots/home_overview.png) | ![Home Detail](docs/screenshots/home_detail.png) | High-level system uptime, telemetry heartbeat, and overall status shield. |
-| **2. Cluster Nodes** | ![Cluster Overview](docs/screenshots/cluster_health_overview.png) | ![Cluster Detail](docs/screenshots/cluster_health_detail.png) | Heart bar health readout (6 nodes), per-node latency history, and failure simulation. |
-| **3. Incident Log** | ![Incidents Overview](docs/screenshots/incidents_overview.png) | ![Incidents Detail](docs/screenshots/incidents_detail.png) | Streak counter (3-strike alarm), outage triage, and Telegram notification log. |
-| **4. Cloud Costs** | ![Costs Overview](docs/screenshots/costs_overview.png) | ![Costs Detail](docs/screenshots/costs_detail.png) | Crystal & XP level bar, 15-day spend trend, 4-tier breakdown, and budget steppers. |
-| **5. Release Pipeline**| ![Deploy Overview](docs/screenshots/deploy_overview.png) | ![Deploy Detail](docs/screenshots/deploy_detail.png) | Voxel rocket status, git commit SHA, CI artifact verification, and rollback. |
-| **6. Weather & Clock** | ![Weather Overview](docs/screenshots/weather_clock_day_overview.png) | ![Weather Detail](docs/screenshots/weather_clock_detail.png) | Dynamic day/night procedural sky, large digital clock, barometric telemetry, and °C/°F toggle. |
-| **7. Focus Timer** | ![Focus Timer Overview](docs/screenshots/focus_timer_overview.png) | ![Focus Timer Detail](docs/screenshots/focus_timer_detail.png) | Zero-drift Pomodoro timer, 15m/25m/45m presets, XP session count, and Web Audio SFX. |
-| **8. Device Config** | ![Settings Overview](docs/screenshots/settings_overview.png) | ![Settings Detail](docs/screenshots/settings_detail.png) | Day/Night toggle, display brightness, Wi-Fi telemetry, and hold-to-confirm factory reset. |
+| **1. System Status** | ![Home Overview](docs/screenshots/home_overview.png) | ![Home Detail](docs/screenshots/home_detail.png) | High-level system uptime, telemetry heartbeat, and overall status shield. Label: `ALL GOOD` (failure: `NEEDS LOVE`). |
+| **2. Cluster Nodes** | ![Cluster Overview](docs/screenshots/cluster_health_overview.png) | ![Cluster Detail](docs/screenshots/cluster_health_detail.png) | Heart bar health readout (6 nodes), per-node latency history, and failure simulation. Label: `6 HAPPY` (failure: `N DOWN`). |
+| **3. Incident Log** | ![Incidents Overview](docs/screenshots/incidents_overview.png) | ![Incidents Detail](docs/screenshots/incidents_detail.png) | Streak counter (3-strike alarm), outage triage, and Telegram notification log. Label: `ALL CLEAR` (failure: `UH OH`). |
+| **4. Cloud Costs** | ![Costs Overview](docs/screenshots/costs_overview.png) | ![Costs Detail](docs/screenshots/costs_detail.png) | Crystal & XP level bar, 15-day spend trend, 4-tier breakdown, and budget steppers. Label: `ON TRACK` (over-budget: `HEADS UP`). |
+| **5. Release Pipeline**| ![Deploy Overview](docs/screenshots/deploy_overview.png) | ![Deploy Detail](docs/screenshots/deploy_detail.png) | Voxel rocket status, git commit SHA, CI artifact verification, and rollback. Label: `LET'S SHIP` (shipping: `SHIPPING`). |
+| **6. Weather & Clock** | ![Weather Overview](docs/screenshots/weather_clock_day_overview.png) | ![Weather Detail](docs/screenshots/weather_clock_detail.png) | Dynamic day/night procedural sky, large digital clock, barometric telemetry, and °C/°F toggle. Label: Dynamic Temp + Condition. |
+| **7. Focus Timer** | ![Focus Timer Overview](docs/screenshots/focus_timer_overview.png) | ![Focus Timer Detail](docs/screenshots/focus_timer_detail.png) | Zero-drift Pomodoro timer, 15m/25m/45m presets, XP session count, and Web Audio SFX. Label: `FOCUS TIME` / `CHILL TIME`. |
+| **8. Device Config** | ![Settings Overview](docs/screenshots/settings_overview.png) | ![Settings Detail](docs/screenshots/settings_detail.png) | Day/Night toggle, display brightness, Wi-Fi telemetry, and hold-to-confirm factory reset. Label: `SETTINGS`. |
 
 ---
 
@@ -96,11 +100,11 @@ flowchart TD
         end
     end
 
-    subgraph Physical_Hardware ["Desk Hardware Fixture"]
-        ESP32["ESP32 Microcontroller\nFreeRTOS + Arduino Framework"]
+    subgraph Physical_Hardware ["Desk Hardware Fixture (Offline Mock Data Today)"]
+        ESP32["ESP32 Microcontroller\nArduino Framework / C++"]
         TFT_Display["2.8' ILI9341 SPI TFT LCD\n320x240 @ 16-bit RGB565"]
         Touchscreen["XPT2046 Resistive Touchscreen\nSPI Digitizer with Clamping"]
-        Firmware_TLS["WiFiClientSecure\nPinned ISRG Root X1 CA (No Insecure TLS)"]
+        Firmware_TLS["WiFiClientSecure (Prepared / Planned)\nPinned ISRG Root X1 CA (ca_cert.h)"]
     end
 
     subgraph External_Cloud ["Cloud & External Services"]
@@ -117,8 +121,8 @@ flowchart TD
 
     ESP32 --> TFT_Display
     Touchscreen --> ESP32
-    ESP32 -- "Wi-Fi HTTPS\n(Pinned Root CA)" --> Firmware_TLS
-    Firmware_TLS -. "LAN Mode Opt-in" .-> Auth_Layer
+    ESP32 -. "Planned Wi-Fi HTTPS\n(Pinned Root CA)" .-> Firmware_TLS
+    Firmware_TLS -. "Future Sync" .-> Auth_Layer
 
     Design_Tokens -- "Generates CSS Vars" --> Simulator
     Design_Tokens -- "Generates C++ Header" --> ESP32
@@ -140,7 +144,7 @@ Desk gadgets fail when they demand active reading. PulseBox enforces that every 
 ### 2. Radical Brevity (Word & Element Limits)
 - **Max 3 text elements** per screen (excluding the persistent hotbar).
 - **Max 5 words total** per screen on overview (excluding the hotbar).
-- Overview labels are strictly 1 to 2 words (e.g. `SYS NOMINAL`, `6/6 ONLINE`, `$64.20 TODAY`, `CONFIG READY`).
+- Overview labels are strictly 1 to 2 words (e.g. `ALL GOOD`, `6 HAPPY`, `ALL CLEAR`, `ON TRACK`, `LET'S SHIP`, `FOCUS TIME`, `SETTINGS`).
 - Overview detail triggers use a compact tap arrow icon (`▶`) instead of bulky text buttons.
 - Zero multi-paragraph text or tables on the embedded canvas.
 
@@ -156,7 +160,7 @@ Rather than unbounded 24-bit color, the UI uses strictly curated 16-color indexe
 - All interactive touch targets are $\ge 32 \times 32\text{px}$ to guarantee effortless actuation on resistive digitizers.
 
 ### 5. Progressive Disclosure ("Behind-the-Tap")
-High-level state is glanceable upfront. Tapping the screen or a component opens a dedicated **Detail View** with granular metrics, log streams, and controls, always paired with a standard $32 \times 32\text{px}$ `[< BACK]` button.
+High-level state is glanceable upfront. Tapping the screen or a component opens a dedicated **Behind-The-Tap Detail View** with granular metrics, log streams, and controls, always paired with a standard $32 \times 32\text{px}$ `[< BACK]` button.
 
 ---
 
@@ -165,9 +169,9 @@ High-level state is glanceable upfront. Tapping the screen or a component opens 
 PulseBox implements defense-in-depth security across web, API, and firmware layers as defined in [SECURITY.md](SECURITY.md):
 
 1. **Loopback-Only by Default:** The backend binds strictly to `127.0.0.1`. Binding to `0.0.0.0` is prohibited unless `PULSEBOX_ALLOW_LAN=true` is explicitly provided.
-2. **State-Mutation Authentication:** All state-changing endpoints (`/simulate-failure`, `/restore`, `/reset`, `/costs/settings`, `/record-health-check`) require `Authorization: Bearer <TOKEN>` verified via constant-time hashing (`secrets.compare_digest`).
+2. **State-Mutation Authentication:** All state-changing endpoints (`/simulate-failure`, `/restore`, `/reset`, `/costs/settings`) require `Authorization: Bearer <TOKEN>` verified via constant-time hashing (`secrets.compare_digest`).
 3. **Restricted CORS & Rate Limiting:** CORS origin is whitelisted to the frontend; wildcard origins (`*`) are disallowed. A sliding-window rate limiter throttles clients to 120 req/min (30 req/min for mutations).
-4. **Firmware TLS Integrity:** ESP32 firmware enforces a pinned Root CA (ISRG Root X1) in `firmware/src/ca_cert.h`. Calling `WiFiClientSecure::setInsecure()` is strictly forbidden.
+4. **Firmware TLS Integrity Preparedness:** The ESP32 firmware repository includes a pinned Root CA (ISRG Root X1) in `firmware/src/ca_cert.h` prepared for planned Wi-Fi HTTPS client communication. Calling `WiFiClientSecure::setInsecure()` is strictly forbidden. The backend is prepared with an optional/future scoped device token (`PULSEBOX_DEVICE_KEY`) only needed if the device ever posts data.
 5. **Hold-to-Confirm & Audit Logging:** High-impact actions (power standby, factory reset) require a 1.0s to 1.5s press-and-hold gesture. All actions generate structured `[AUDIT_LOG]` records.
 6. **Automated Supply Chain Scans:** CI automatically runs `gitleaks` for token leak prevention, `pip-audit` for Python dependencies, `npm audit` for frontend libraries, and weekly Dependabot updates.
 
@@ -188,13 +192,21 @@ The project boasts comprehensive automated test coverage spanning Python unit/in
 | **Cloud Costs Module** | [tests/test_frontend_costs.js](tests/test_frontend_costs.js) | **32** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Weather & Clock Screen** | [tests/test_frontend_weather_clock.js](tests/test_frontend_weather_clock.js) | **33** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Incident Logging** | [tests/test_frontend_incidents.js](tests/test_frontend_incidents.js) | **27** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
-| **ESP32 Firmware Build** | [firmware/src/main.cpp](firmware/src/main.cpp) | **PlatformIO** | ![Build Passing](https://img.shields.io/badge/PlatformIO-Compiled-brightgreen) |
+| **ESP32 Firmware Build** | [firmware/src/main.cpp](firmware/src/main.cpp) | **PlatformIO** (Offline Mock Data) | ![Build Passing](https://img.shields.io/badge/PlatformIO-Compiled-brightgreen) |
 | **TOTAL ASSERTIONS** | — | **748 checks** | **100% PASS** |
 
 ### Firmware Resource Footprint (ESP32)
 - **RAM Usage:** 22,028 Bytes / 327,680 Bytes (**6.7%**)
 - **Flash Usage:** 343,853 Bytes / 1,310,720 Bytes (**26.2%**)
 - **PlatformIO Compilation Time:** 15.8 seconds (Zero warnings)
+
+---
+
+## 🗺️ Roadmap
+
+1. **Flash & Calibrate on Real Hardware:** Flash the compiled PlatformIO firmware binary to physical ESP32 + 2.8" ILI9341 display modules, calibrate XPT2046 resistive touch coordinates on real glass, and benchmark dirty-region redraw latency.
+2. **Wi-Fi Client with Pinned CA:** Implement a dedicated Wi-Fi client that connects to local WPA2/WPA3 networks and periodically executes `GET /state` over HTTPS, verifying server identity against the pinned ISRG Root X1 certificate in `ca_cert.h`.
+3. **Optional Scoped Device Token:** Support an optional device token (`PULSEBOX_DEVICE_KEY`) only if the physical fixture is configured to post telemetry (`POST /record-health-check`) back to the Flask backend; standard read-only polling remains unauthenticated by design.
 
 ---
 

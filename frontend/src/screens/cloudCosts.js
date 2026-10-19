@@ -189,7 +189,7 @@ export function renderCloudCostsScreen(container, state, appActions, options = {
             </div>
           </div>
           <div class="voxel-hero-metric ${statusClass === 'normal' ? 'status-nominal' : (statusClass === 'warning' ? 'status-warning' : 'status-alert')}">
-            ${formatCurrency(todaySpend)} TODAY
+            ${statusClass === 'normal' ? 'ON TRACK' : 'HEADS UP'}
           </div>
           <div class="voxel-hero-actions">
             <button class="voxel-btn ${statusClass === 'normal' ? 'variant-secondary' : 'variant-caution'} voxel-tap-arrow-btn" id="btn-costs-detail" aria-label="Details">

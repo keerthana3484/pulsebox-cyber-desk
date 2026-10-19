@@ -54,7 +54,7 @@ export function renderServersScreen(container, state, appActions, options = {}) 
     const mascotSvg = getPulseBotMascotSvg(mascotExpression, 48);
     const heartBarHtml = buildHeartBar({ current: hp, max: 10 });
 
-    const heroMetricText = isOffline ? "NO SYNC" : `${healthyCount}/${totalCount} ONLINE`;
+    const heroMetricText = isOffline ? "OFFLINE" : (failedCount > 0 ? `${failedCount} DOWN` : `${healthyCount} HAPPY`);
     const heroStatusText = isOffline ? "BACKEND OFFLINE" : (failedCount > 0 ? `${failedCount} DOWN` : "ALL NOMINAL");
 
     container.innerHTML = `

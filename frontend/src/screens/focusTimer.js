@@ -62,18 +62,18 @@ export function renderFocusTimerScreen(container, state, appActions, options = {
       <div class="screen-voxel-wrapper screen-content screen-focus-timer">
         <!-- 1. HERO OVERVIEW VIEW (Strict 1-Second Glanceable, <= 3 text elements, <= 12 words) -->
         <div class="screen-hero-view ${showDetail ? 'is-hidden' : ''}" id="hero-overview-stage">
-          <div class="voxel-hero-visual" style="flex-direction: column; width: 85%; max-width: 240px; gap: 8px;">
-            <div class="ft-digits-hero ${isFocus ? 'digits-focus' : 'digits-break'}" id="ft-clock-digits" style="font-size: 32px; font-weight: 700; letter-spacing: 2px;">
+          <div class="voxel-hero-visual" style="flex-direction: column; width: 85%; max-width: 240px; gap: 6px;">
+            <div class="ft-digits-hero ${isFocus ? 'digits-focus' : 'digits-break'}" id="ft-clock-digits" style="font-size: 28px; font-weight: 700; letter-spacing: 2px;">
               ${timeDisplay}
             </div>
             <div style="width: 100%;">
               ${xpFillHtml}
             </div>
           </div>
+          <div class="voxel-hero-metric ${isFocus ? 'status-nominal' : 'status-warning'}" id="ft-hero-mode">
+            ${isFocus ? 'FOCUS TIME' : 'CHILL TIME'}
+          </div>
           <div class="voxel-hero-actions">
-            <button class="voxel-btn ${isRunning ? 'variant-caution' : 'variant-primary'}" id="btn-hero-timer-toggle">
-              ${isRunning ? 'PAUSE' : (elapsedSeconds > 0 ? 'RESUME' : 'START')}
-            </button>
             <button class="voxel-btn variant-secondary voxel-tap-arrow-btn" id="btn-timer-detail" aria-label="Details">
               ▶
             </button>

@@ -54,7 +54,7 @@ export function renderHomeScreen(container, state, appActions, options = {}) {
           </div>
 
           <div class="voxel-hero-metric ${isNominal ? 'status-nominal' : isOffline ? 'status-alert' : 'status-warning'}" id="home-hero-metric">
-            ${isOffline ? 'SYS OFFLINE' : isNominal ? 'SYS NOMINAL' : 'SYS DEGRADED'}
+            ${isOffline ? 'OFFLINE' : isNominal ? 'ALL GOOD' : 'NEEDS LOVE'}
           </div>
 
           <div class="voxel-hero-actions">

@@ -148,6 +148,7 @@ export function renderCompanionScreen(container, state, appActions, options = {}
     const data = weather || {};
     const loc = data.location || "DEMO LOCATION";
     const cond = data.condition || "Partly Cloudy";
+    const liveCondWord = (cond.split(/\s+/).pop() || "CLEAR").toUpperCase();
     const condSymbol = data.condition_symbol || (isDay ? "⛅" : "🌙");
     const tempF = typeof data.temperature_f === "number" ? Math.round(data.temperature_f) : 72;
     const tempC = typeof data.temperature_c === "number" ? Math.round(data.temperature_c) : 22;
@@ -182,7 +183,7 @@ export function renderCompanionScreen(container, state, appActions, options = {}
           </div>
 
           <div class="voxel-hero-metric ${isOffline ? 'status-alert' : 'status-nominal'}" id="weather-overview-badge">
-            <span id="weather-clock-time">${clockData.timeStr.slice(0, 5)}</span> ${isOffline ? 'OFFLINE' : displayTemp}
+            ${isOffline ? 'OFFLINE' : `${displayTemp} ${liveCondWord}`}
           </div>
 
           <div class="voxel-hero-actions">

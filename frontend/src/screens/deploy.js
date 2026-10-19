@@ -8,7 +8,7 @@ import {
 } from "../voxelComponents.js";
 
 export function renderDeployScreen(container, state, appActions, options = {}) {
-  let isDeploying = false;
+  let isDeploying = options.initialDeploying ?? false;
   let deployStep = 0;
   let deployLogs = [];
   let showDetail = options.initialShowDetail ?? false;
@@ -37,7 +37,7 @@ export function renderDeployScreen(container, state, appActions, options = {}) {
           </div>
 
           <div class="voxel-hero-metric status-nominal" id="deploy-hero-metric">
-            ${prod.version} ${isDeploying ? 'SHIPPING' : 'READY'}
+            ${isDeploying ? 'SHIPPING' : "LET'S SHIP"}
           </div>
 
           <div class="voxel-hero-actions">

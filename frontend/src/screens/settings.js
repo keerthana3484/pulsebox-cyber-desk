@@ -28,7 +28,7 @@ export function renderSettingsScreen(container, state, appActions, options = {})
           </div>
 
           <div class="voxel-hero-metric status-nominal" id="settings-hero-metric">
-            CONFIG READY
+            SETTINGS
           </div>
 
           <div class="voxel-hero-actions">
