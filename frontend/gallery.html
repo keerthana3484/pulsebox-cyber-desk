@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PulseBox Cyber Desk — Voxel Component Gallery</title>
+  <meta name="description" content="Interactive component gallery demonstrating all reusable voxel UI components, procedural sprites, and states for PulseBox Cyber Desk.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/voxelComponents.css">
+  <style>
+    :root {
+      --font-pixel: 'Silkscreen', 'Press Start 2P', monospace;
+      --bg-dark: #07090e;
+      --panel-dark: #0e131d;
+      --border-dark: #1e283b;
+      --text-white: #e2e8f0;
+      --text-muted: #8899ac;
+      --accent-cyan: #00e5ff;
+      --accent-green: #00e676;
+      --accent-amber: #ffb300;
+      --accent-red: #ff1744;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      font-family: var(--font-pixel);
+      padding: 24px;
+      line-height: 1.5;
+      image-rendering: pixelated;
+    }
+
+    body.day-mode {
+      --bg-dark: #1a1c23;
+      --panel-dark: #242b38;
+      --border-dark: #3b4252;
+      --text-white: #f0f4f8;
+      --text-muted: #9aa5b4;
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+    }
+
+    header {
+      max-width: 1200px;
+      margin: 0 auto 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border-dark);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      color: var(--accent-cyan);
+      letter-spacing: 1px;
+    }
+
+    .header-nav {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: 10px;
+      color: var(--text-white);
+      text-decoration: none;
+      padding: 6px 12px;
+      background: #141b28;
+      border: 1px solid var(--border-dark);
+    }
+
+    .nav-link:hover {
+      border-color: var(--accent-cyan);
+    }
+
+    .gallery-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .component-section {
+      background: var(--panel-dark);
+      border: 2px solid var(--border-dark);
+      padding: 20px;
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-dark);
+    }
+
+    .section-title {
+      font-size: 13px;
+      color: var(--accent-cyan);
+      letter-spacing: 0.5px;
+    }
+
+    .section-desc {
+      font-size: 9px;
+      color: var(--text-muted);
+    }
+
+    .component-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .state-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #080c14;
+      padding: 12px;
+      border: 1px solid var(--border-dark);
+      min-width: 160px;
+    }
+
+    .day-mode .state-group {
+      background: #1e2532;
+    }
+
+    .state-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Hotbar Container Frame */
+    .hotbar-frame {
+      width: 320px;
+      border: 2px solid #000;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+      background: #000;
+    }
+
+    /* Event log ticker */
+    .event-log-ticker {
+      font-size: 9px;
+      color: var(--accent-green);
+      background: #060910;
+      padding: 8px 12px;
+      border: 1px solid var(--border-dark);
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    .mascot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1 class="brand-title">VOXEL COMPONENT GALLERY</h1>
+      <span style="font-size: 9px; color: var(--text-muted);">REUSABLE PIXEL-ART SUBSYSTEM // 8PX SNAP GRID</span>
+    </div>
+
+    <div class="header-nav">
+      <a href="./palette_preview.html" class="nav-link">◀ SWATCHES</a>
+      <a href="./simulator.html" class="nav-link">SIMULATOR</a>
+      <button class="voxel-btn variant-secondary" id="btn-toggle-day-night" style="font-size: 9px; padding: 4px 8px;">
+        MODE: NIGHT
+      </button>
+      <button class="voxel-btn variant-secondary" id="btn-toggle-sfx" style="font-size: 9px; padding: 4px 8px;">
+        🔊 SFX ON
+      </button>
+    </div>
+  </header>
+
+  <main class="gallery-container">
+
+    <!-- EVENT MONITOR -->
+    <div class="event-log-ticker" id="event-ticker">
+      [READY] Component gallery initialized. Click any interactive button, slot, or mascot.
+    </div>
+
+    <!-- 1. BEVELED BLOCK BUTTONS -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">1. Beveled Block Buttons</h2>
+        <span class="section-desc">Normal, Pressed, and Disabled states across 4 variants (min 32x32px touch target)</span>
+      </div>
+
+      <div class="component-row">
+        <!-- Primary Variant -->
+        <div class="state-group">
+          <span class="state-label">Primary (Nominal)</span>
+          <button class="voxel-btn variant-primary" data-log="Primary button clicked">SAVE</button>
+          <button class="voxel-btn variant-primary state-pressed" data-log="Primary pressed state">PRESSED</button>
+          <button class="voxel-btn variant-primary state-disabled" disabled>LOCKED</button>
+        </div>
+
+        <!-- Secondary Variant -->
+        <div class="state-group">
+          <span class="state-label">Secondary (Cobble)</span>
+          <button class="voxel-btn variant-secondary" data-log="Secondary button clicked">CANCEL</button>
+          <button class="voxel-btn variant-secondary state-pressed" data-log="Secondary pressed state">PRESSED</button>
+          <button class="voxel-btn variant-secondary state-disabled" disabled>LOCKED</button>
+        </div>
+
+        <!-- Caution Variant -->
+        <div class="state-group">
+          <span class="state-label">Caution (Amber)</span>
+          <button class="voxel-btn variant-caution" data-log="Caution button clicked">ADJUST</button>
+          <button class="voxel-btn variant-caution state-pressed" data-log="Caution pressed state">PRESSED</button>
+          <button class="voxel-btn variant-caution state-disabled" disabled>LOCKED</button>
+        </div>
+
+        <!-- Danger Variant -->
+        <div class="state-group">
+          <span class="state-label">Danger (Redstone)</span>
+          <button class="voxel-btn variant-danger" data-log="Danger button clicked">FAIL NODE</button>
+          <button class="voxel-btn variant-danger state-pressed" data-log="Danger pressed state">PRESSED</button>
+          <button class="voxel-btn variant-danger state-disabled" disabled>LOCKED</button>
+        </div>
+
+        <!-- Icon Buttons -->
+        <div class="state-group">
+          <span class="state-label">Icon Buttons (32x32)</span>
+          <div style="display: flex; gap: 8px;">
+            <button class="voxel-btn variant-primary" style="width: 32px; height: 32px; padding: 0;" data-log="Check button clicked">✓</button>
+            <button class="voxel-btn variant-secondary" style="width: 32px; height: 32px; padding: 0;" data-log="Back button clicked">◀</button>
+            <button class="voxel-btn variant-danger" style="width: 32px; height: 32px; padding: 0;" data-log="Delete button clicked">✕</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. HOTBAR NAVIGATION -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">2. Hotbar Navigation (320px Canvas Width)</h2>
+        <span class="section-desc">8 Chunky Slots (40x32px each) perfectly spanning 320px with active slot highlight</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; align-items: flex-start;">
+        <div class="hotbar-frame" id="hotbar-mount">
+          <!-- Injected via JavaScript from voxelComponents.js -->
+        </div>
+        <span style="font-size: 9px; color: var(--text-muted);" id="hotbar-readout">Active slot: #1 (HOME)</span>
+      </div>
+    </section>
+
+    <!-- 3. HEART BAR & HUNGER BAR -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">3. Heart Bar & Hunger Bar</h2>
+        <span class="section-desc">Original procedural pixel-art sprites for health status and resource telemetry</span>
+      </div>
+
+      <div class="component-row">
+        <!-- Heart Bar States -->
+        <div class="state-group" style="min-width: 260px;">
+          <span class="state-label">Heart Bar (Vitality / Health)</span>
+          <div id="heart-full-mount"></div>
+          <div id="heart-mid-mount"></div>
+          <div id="heart-low-mount"></div>
+        </div>
+
+        <!-- Hunger Bar States -->
+        <div class="state-group" style="min-width: 260px;">
+          <span class="state-label">Hunger Bar (Resource / Heap Meter)</span>
+          <div id="hunger-full-mount"></div>
+          <div id="hunger-mid-mount"></div>
+          <div id="hunger-low-mount"></div>
+        </div>
+
+        <!-- Live Interactive Stepper -->
+        <div class="state-group" style="min-width: 260px;">
+          <span class="state-label">Live Health Tester</span>
+          <div id="live-heart-mount" style="margin-bottom: 8px;"></div>
+          <div style="display: flex; gap: 8px;">
+            <button class="voxel-btn variant-danger" id="btn-damage" style="font-size: 9px; padding: 4px 8px;">-1 HP</button>
+            <button class="voxel-btn variant-primary" id="btn-heal" style="font-size: 9px; padding: 4px 8px;">+1 HP</button>
+            <button class="voxel-btn variant-secondary" id="btn-reset-hp" style="font-size: 9px; padding: 4px 8px;">RESET</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. XP PROGRESS BAR -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">4. XP Progress Level Bar</h2>
+        <span class="section-desc">Stepped level progress bar with centered level number badge</span>
+      </div>
+
+      <div class="component-row" style="flex-direction: column; align-items: stretch; max-width: 600px; gap: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+          <span style="font-size: 9px; width: 60px;">LVL 42 (75%):</span>
+          <div style="flex-grow: 1;" id="xp-75-mount"></div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+          <span style="font-size: 9px; width: 60px;">LVL 10 (25%):</span>
+          <div style="flex-grow: 1;" id="xp-25-mount"></div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+          <span style="font-size: 9px; width: 60px;">LVL 99 (100%):</span>
+          <div style="flex-grow: 1;" id="xp-100-mount"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. INVENTORY SLOTS & PROCEDURAL ITEMS -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">5. Inventory Slots & Procedural Items</h2>
+        <span class="section-desc">40x40px & 32x32px recessed voxel containers with count badges and procedural pixel item icons</span>
+      </div>
+
+      <div class="component-row" id="slots-row">
+        <!-- Injected via JavaScript from voxelComponents.js -->
+      </div>
+    </section>
+
+    <!-- 6. ALERT BANNERS -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">6. Alert Banners</h2>
+        <span class="section-desc">Chunky beveled banners for Nominal, Warning, and Critical Outage alerts</span>
+      </div>
+
+      <div class="component-row" style="flex-direction: column; align-items: stretch; max-width: 600px; gap: 12px;">
+        <div id="banner-nominal-mount"></div>
+        <div id="banner-warning-mount"></div>
+        <div id="banner-critical-mount"></div>
+      </div>
+    </section>
+
+    <!-- 7. RESTYLED PULSEBOT MASCOT EXPRESSIONS -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">7. Restyled PulseBot Mascot (4 Original Expressions)</h2>
+        <span class="section-desc">Procedural 28x28 pixel art robot companion: Happy, Idle, Worried, Celebrating</span>
+      </div>
+
+      <div class="mascot-grid">
+        <div class="pulsebot-card" id="card-mascot-happy">
+          <div id="mascot-happy-mount"></div>
+          <span class="mascot-caption" style="color: #00E676;">HAPPY [^ ^]</span>
+          <span style="font-size: 8px; color: var(--text-muted); margin-top: 4px;">System nominal & healthy</span>
+        </div>
+
+        <div class="pulsebot-card" id="card-mascot-idle">
+          <div id="mascot-idle-mount"></div>
+          <span class="mascot-caption" style="color: #00E5FF;">IDLE [■ ■]</span>
+          <span style="font-size: 8px; color: var(--text-muted); margin-top: 4px;">Ready & monitoring desk</span>
+        </div>
+
+        <div class="pulsebot-card" id="card-mascot-worried">
+          <div id="mascot-worried-mount"></div>
+          <span class="mascot-caption" style="color: #FFB300;">WORRIED [/ \]</span>
+          <span style="font-size: 8px; color: var(--text-muted); margin-top: 4px;">Service degradation & warning</span>
+        </div>
+
+        <div class="pulsebot-card" id="card-mascot-celebrating">
+          <div id="mascot-celebrating-mount"></div>
+          <span class="mascot-caption" style="color: #FFD54F;">PARTY [★ ★]</span>
+          <span style="font-size: 8px; color: var(--text-muted); margin-top: 4px;">Deploy shipped or milestone</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module">
+    import {
+      buildVoxelButton,
+      buildHeartBar,
+      buildHungerBar,
+      buildXpBar,
+      buildInventorySlot,
+      buildHotbarNavigation,
+      buildAlertBanner,
+      getPulseBotMascotSvg,
+    } from "./src/voxelComponents.js";
+
+    import {
+      playClickSound,
+      playSuccessChime,
+      playAlertSound,
+      playBeepSound,
+      setSoundEnabled,
+      isSoundEnabled,
+    } from "./src/audio.js";
+
+    const logEl = document.getElementById("event-ticker");
+    function logEvent(msg) {
+      logEl.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    }
+
+    // 1. Audio and Day/Night Toggles
+    const sfxBtn = document.getElementById("btn-toggle-sfx");
+    sfxBtn.addEventListener("click", () => {
+      const now = !isSoundEnabled();
+      setSoundEnabled(now);
+      sfxBtn.textContent = now ? "🔊 SFX ON" : "🔇 SFX OFF";
+      logEvent(`Audio sound effects set to: ${now ? 'ENABLED' : 'MUTED'}`);
+      if (now) playClickSound();
+    });
+
+    let isDay = false;
+    const themeBtn = document.getElementById("btn-toggle-day-night");
+    themeBtn.addEventListener("click", () => {
+      isDay = !isDay;
+      document.body.classList.toggle("day-mode", isDay);
+      themeBtn.textContent = isDay ? "MODE: DAY" : "MODE: NIGHT";
+      playClickSound();
+      logEvent(`Theme toggled to: ${isDay ? 'DAY PALETTE (Earth/Sunlight)' : 'NIGHT PALETTE (Low-Glare Midnight)'}`);
+      refreshThemedComponents();
+    });
+
+    // 2. Button Click Interactions
+    document.querySelectorAll(".voxel-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (btn.disabled) return;
+        playClickSound();
+        const logMsg = btn.dataset.log || `Button clicked: ${btn.textContent.trim()}`;
+        logEvent(logMsg);
+      });
+    });
+
+    // 3. Hotbar Mount & Interaction
+    let currentHotbarIndex = 0;
+    const hotbarMount = document.getElementById("hotbar-mount");
+    const hotbarReadout = document.getElementById("hotbar-readout");
+
+    function renderHotbar() {
+      hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: currentHotbarIndex });
+      hotbarMount.querySelectorAll(".voxel-hotbar-slot").forEach(slot => {
+        slot.addEventListener("click", () => {
+          const idx = parseInt(slot.dataset.index, 10);
+          currentHotbarIndex = idx;
+          playClickSound();
+          renderHotbar();
+          const label = slot.getAttribute("title");
+          hotbarReadout.textContent = `Active slot: #${idx + 1} (${label})`;
+          logEvent(`Hotbar switched to slot #${idx + 1} (${label})`);
+        });
+      });
+    }
+    renderHotbar();
+
+    // 4. Heart & Hunger Bars Mount
+    let currentHp = 10;
+    function refreshThemedComponents() {
+      const mode = isDay ? "day" : "night";
+      document.getElementById("heart-full-mount").innerHTML = buildHeartBar({ current: 10, max: 10, mode });
+      document.getElementById("heart-mid-mount").innerHTML = buildHeartBar({ current: 7, max: 10, mode });
+      document.getElementById("heart-low-mount").innerHTML = buildHeartBar({ current: 2, max: 10, mode });
+
+      document.getElementById("hunger-full-mount").innerHTML = buildHungerBar({ current: 10, max: 10, mode });
+      document.getElementById("hunger-mid-mount").innerHTML = buildHungerBar({ current: 5, max: 10, mode });
+      document.getElementById("hunger-low-mount").innerHTML = buildHungerBar({ current: 1, max: 10, mode });
+
+      renderLiveHp();
+    }
+
+    function renderLiveHp() {
+      const mode = isDay ? "day" : "night";
+      document.getElementById("live-heart-mount").innerHTML = buildHeartBar({ current: currentHp, max: 10, mode });
+    }
+
+    document.getElementById("btn-damage").addEventListener("click", () => {
+      if (currentHp > 0) currentHp--;
+      playAlertSound();
+      renderLiveHp();
+      logEvent(`Damage taken: Health is now ${currentHp}/10`);
+    });
+
+    document.getElementById("btn-heal").addEventListener("click", () => {
+      if (currentHp < 10) currentHp++;
+      playSuccessChime();
+      renderLiveHp();
+      logEvent(`Healed: Health is now ${currentHp}/10`);
+    });
+
+    document.getElementById("btn-reset-hp").addEventListener("click", () => {
+      currentHp = 10;
+      playClickSound();
+      renderLiveHp();
+      logEvent(`Reset: Health restored to 10/10`);
+    });
+
+    refreshThemedComponents();
+
+    // 5. XP Bars Mount
+    document.getElementById("xp-75-mount").innerHTML = buildXpBar({ current: 75, max: 100, level: 42 });
+    document.getElementById("xp-25-mount").innerHTML = buildXpBar({ current: 25, max: 100, level: 10 });
+    document.getElementById("xp-100-mount").innerHTML = buildXpBar({ current: 100, max: 100, level: 99 });
+
+    // 6. Inventory Slots Mount
+    const slotsRow = document.getElementById("slots-row");
+    const slotDefinitions = [
+      { item: null, count: 1, isSelected: false, label: "Empty Slot" },
+      { item: "wrench", count: 1, isSelected: false, label: "Wrench Tool" },
+      { item: "battery", count: 16, isSelected: false, label: "Energy Cells (16)" },
+      { item: "crystal", count: 64, isSelected: true, label: "Data Crystal (64, Selected)" },
+      { item: "shield", count: 1, isSelected: false, label: "Firewall Shield" },
+      { item: "compass", count: 1, isSelected: false, label: "Router Compass" },
+      { item: "potion", count: 8, isSelected: false, label: "Health Patch (8)" },
+      { item: "server", count: 6, isSelected: false, label: "Server Node Blades (6)" },
+    ];
+
+    slotDefinitions.forEach((def, idx) => {
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = buildInventorySlot({
+        item: def.item,
+        count: def.count,
+        isSelected: def.isSelected,
+        size: 40,
+        id: `slot-item-${idx}`,
+      });
+      const el = wrapper.firstElementChild;
+      el.addEventListener("click", () => {
+        playClickSound();
+        document.querySelectorAll(".voxel-slot").forEach(s => s.classList.remove("is-selected"));
+        el.classList.add("is-selected");
+        logEvent(`Inventory slot selected: ${def.label}`);
+      });
+      slotsRow.appendChild(el);
+    });
+
+    // 7. Alert Banners Mount
+    document.getElementById("banner-nominal-mount").innerHTML = buildAlertBanner({
+      type: "nominal",
+      title: "ALL NODES HEALTHY",
+      message: "Cluster latency 24ms, zero open incidents.",
+    });
+
+    document.getElementById("banner-warning-mount").innerHTML = buildAlertBanner({
+      type: "warning",
+      title: "BUDGET AT 74%",
+      message: "Monthly cloud spending reached threshold ($1,842).",
+    });
+
+    document.getElementById("banner-critical-mount").innerHTML = buildAlertBanner({
+      type: "critical",
+      title: "NODE srv-api DOWN",
+      message: "Critical outage triggered by 3 consecutive failed health checks.",
+    });
+
+    document.querySelectorAll(".alert-dismiss-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        playClickSound();
+        const banner = btn.closest(".voxel-alert-banner");
+        if (banner) {
+          banner.style.display = "none";
+          logEvent("Alert banner dismissed by user.");
+        }
+      });
+    });
+
+    // 8. Mascot Expressions Mount
+    document.getElementById("mascot-happy-mount").innerHTML = getPulseBotMascotSvg("happy", 64);
+    document.getElementById("mascot-idle-mount").innerHTML = getPulseBotMascotSvg("idle", 64);
+    document.getElementById("mascot-worried-mount").innerHTML = getPulseBotMascotSvg("worried", 64);
+    document.getElementById("mascot-celebrating-mount").innerHTML = getPulseBotMascotSvg("celebrating", 64);
+
+    document.getElementById("card-mascot-happy").addEventListener("click", () => {
+      playSuccessChime();
+      logEvent("Mascot Happy: Subsystems nominal!");
+    });
+    document.getElementById("card-mascot-idle").addEventListener("click", () => {
+      playBeepSound(880, 0.08);
+      logEvent("Mascot Idle: PulseBot online and listening.");
+    });
+    document.getElementById("card-mascot-worried").addEventListener("click", () => {
+      playAlertSound();
+      logEvent("Mascot Worried: Warning threshold reached!");
+    });
+    document.getElementById("card-mascot-celebrating").addEventListener("click", () => {
+      playSuccessChime();
+      logEvent("Mascot Celebrating: Milestone accomplished!");
+    });
+  </script>
+</body>
+</html>

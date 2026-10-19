@@ -1,0 +1,113 @@
+/**
+ * PulseBox Cyber Desk — Phase 2 Display Test (Prepared Template)
+ * Target: 2.8-inch SPI TFT Display with ILI9341 Controller (320x240 Landscape)
+ * 
+ * IMPORTANT:
+ * DO NOT ATTEMPT TO FLASH OR WIRE THIS UNTIL HARDWARE DETAILS ARE CONFIRMED.
+ * Inspect the silkscreen labels printed on the back of your physical display PCB first.
+ */
+
+#include <Arduino.h>
+
+// =============================================================================
+// 1. HARDWARE PIN CONFIGURATION PLACEHOLDERS
+// (Pending confirmation from physical display module silkscreen)
+// =============================================================================
+// Note: Standard ESP32-WROOM hardware VSPI bus uses:
+// - SCK / CLK  : GPIO 18 (Pending display label check)
+// - MOSI / SDI : GPIO 23 (Pending display label check)
+// - MISO / SDO : GPIO 19 (Optional, only needed if reading from display)
+// Control lines (must NOT use GPIO 6-11 or input-only GPIO 34-39):
+// - CS         : [PENDING CONFIRMATION] (e.g., GPIO 5 or 15)
+// - DC / RS    : [PENDING CONFIRMATION] (e.g., GPIO 2 or 4)
+// - RST / RESET: [PENDING CONFIRMATION] (e.g., GPIO 4 or ESP32 EN)
+// - LED / BLK  : [PENDING CONFIRMATION] (Connect to 3.3V, check for resistor note)
+
+// =============================================================================
+// 2. CYBER-DESK COLOR PALETTE (RGB565 format for ILI9341)
+// =============================================================================
+#define COLOR_BG          0x0000  // Matte Black (#000000)
+#define COLOR_AMBER       0xFD20  // PulseBox Primary Amber (#FFB000)
+#define COLOR_AMBER_DIM   0x9B40  // Dim Amber Accent (#996600)
+#define COLOR_CYAN        0x07FF  // Cyber Cyan Accent (#00F0FF)
+#define COLOR_WHITE       0xFFFF  // White text
+
+// Once TFT_eSPI or Adafruit_ILI9341 library is enabled in platformio.ini:
+// #include <SPI.h>
+// #include <TFT_eSPI.h>
+// TFT_eSPI tft = TFT_eSPI();
+
+void drawCyberDeskStartupScreen() {
+  /*
+   * Visualization of the 320x240 Startup Screen:
+   * +--------------------------------------------------+
+   * | [SIM]  PULSEBOX CYBER DESK                 12:00 |
+   * |--------------------------------------------------|
+   * |                                                  |
+   * |                    PULSEBOX                      |
+   * |                   CYBER DESK                     |
+   * |                                                  |
+   * |             [ONLINE - ILI9341 READY]             |
+   * |                                                  |
+   * |--------------------------------------------------|
+   * | [HOME] [SRV] [INC] [COST] [WEATHER] [TIMER] [SET]|
+   * +--------------------------------------------------+
+   */
+
+  // 1. Clear screen to Matte Black
+  // tft.fillScreen(COLOR_BG);
+
+  // 2. Draw Outer Cyber Amber Border
+  // tft.drawRect(2, 2, 316, 236, COLOR_AMBER_DIM);
+  // tft.drawRect(4, 4, 312, 232, COLOR_AMBER);
+
+  // 3. Top Header Bar
+  // tft.fillRect(6, 6, 308, 18, 0x10A2); // Subtle dark grey header
+  // tft.setTextColor(COLOR_AMBER, 0x10A2);
+  // tft.drawString("[SIM] PULSEBOX CYBER DESK", 10, 10);
+  // tft.drawString("12:00", 270, 10);
+
+  // 4. Center Banner - "PULSEBOX"
+  // tft.setTextColor(COLOR_AMBER, COLOR_BG);
+  // tft.setTextSize(3);
+  // tft.drawString("PULSEBOX", 85, 75);
+
+  // 5. Subtitle - "CYBER DESK"
+  // tft.setTextColor(COLOR_CYAN, COLOR_BG);
+  // tft.setTextSize(2);
+  // tft.drawString("CYBER DESK", 105, 110);
+
+  // 6. Hardware Status Badge
+  // tft.fillRect(60, 145, 200, 24, 0x18C3);
+  // tft.drawRect(60, 145, 200, 24, COLOR_AMBER);
+  // tft.setTextColor(COLOR_AMBER, 0x18C3);
+  // tft.setTextSize(1);
+  // tft.drawString("[ ONLINE - ILI9341 READY ]", 78, 153);
+
+  // 7. Footer Screen Navigation Tabs
+  // tft.drawFastHLine(6, 215, 308, COLOR_AMBER_DIM);
+  // tft.setTextColor(COLOR_AMBER_DIM, COLOR_BG);
+  // tft.drawString("[HOME] [SRV] [INC] [COST] [TIME] [SET]", 25, 222);
+}
+
+void setup() {
+  // Always initialize serial monitor first for debugging
+  Serial.begin(115200);
+  delay(1000);
+  
+  // Keep Phase 1 serial verification alive
+  Serial.println("PULSEBOX HARDWARE FOUND");
+  Serial.println("[PHASE 2] Display Test Scaffold Loaded");
+  Serial.println("[PHASE 2] Waiting for physical SPI pinout confirmation...");
+
+  // Display initialization (uncommented once pins are locked in):
+  // tft.init();
+  // tft.setRotation(1); // 1 = 320x240 landscape (or 3 for 180-deg flip)
+  // drawCyberDeskStartupScreen();
+}
+
+void loop() {
+  // Continuous serial heartbeat to allow troubleshooting anytime
+  Serial.println("PULSEBOX HARDWARE FOUND");
+  delay(2000);
+}

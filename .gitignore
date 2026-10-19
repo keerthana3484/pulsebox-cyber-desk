@@ -39,6 +39,10 @@ npm-debug.log*
 .env
 .env.*
 !.env.example
+secrets.h
+*/secrets.h
+firmware/src/secrets.h
+*.secret
 *.pem
 *.key
 *.cert

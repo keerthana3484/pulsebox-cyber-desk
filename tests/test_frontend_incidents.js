@@ -95,11 +95,18 @@ async function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+process.env.PULSEBOX_API_KEY = process.env.PULSEBOX_API_KEY || "test_pulsebox_secret_key_123";
+
 // Backend helper to inject failures
 async function postJson(url, data = {}) {
+  const apiKey = process.env.PULSEBOX_API_KEY;
+  const headers = { "Content-Type": "application/json" };
+  if (apiKey) {
+    headers["Authorization"] = `Bearer ${apiKey}`;
+  }
   const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify(data),
   });
   return await res.json();

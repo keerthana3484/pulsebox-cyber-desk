@@ -103,6 +103,8 @@ INITIAL_SERVERS: List[Dict[str, Any]] = [
 class CyberDeskState:
     """Manages simulated in-memory state for PulseBox Cyber Desk."""
 
+    MAX_INCIDENTS: int = 100
+
     def __init__(self) -> None:
         self.start_time = time.time()
         self.servers: List[Dict[str, Any]] = [s.copy() for s in INITIAL_SERVERS]
@@ -272,6 +274,8 @@ class CyberDeskState:
                     "detail": msg,
                 }
                 self.incidents.append(incident)
+                if len(self.incidents) > self.MAX_INCIDENTS:
+                    self.incidents = self.incidents[-self.MAX_INCIDENTS:]
                 created_incident = incident
                 self.last_event = f"CRITICAL incident {incident_id} created: {msg}"
                 message = f"Health check failed on '{target_server['name']}' (streak: {streak}). Incident {incident_id} created."

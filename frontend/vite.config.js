@@ -5,11 +5,14 @@ import { fileURLToPath } from "url";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
+  base: "./",
   build: {
     rollupOptions: {
       input: {
         main: resolve(__dirname, "index.html"),
         simulator: resolve(__dirname, "simulator.html"),
+        palette_preview: resolve(__dirname, "palette_preview.html"),
+        gallery: resolve(__dirname, "gallery.html"),
       },
     },
   },

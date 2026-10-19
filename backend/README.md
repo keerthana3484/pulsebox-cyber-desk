@@ -67,6 +67,49 @@ When running in LAN Mode (`HOST=0.0.0.0`), the ESP32 must connect using your lap
 
 ---
 
+## 🔐 API Authentication & Resource Limits
+
+To protect simulated state and avoid unauthorized alert triggers, all state-mutating `POST` endpoints enforce **Bearer Token Authentication** using the `PULSEBOX_API_KEY` environment variable.
+
+### 1. Configure the API Key
+Set `PULSEBOX_API_KEY` in `backend/.env` (or in your shell session):
+
+```env
+PULSEBOX_API_KEY=your_secret_api_key_here
+```
+```powershell
+$env:PULSEBOX_API_KEY="your_secret_api_key_here"
+```
+
+### 2. Protected Endpoints
+The following endpoints require `Authorization: Bearer <PULSEBOX_API_KEY>`:
+- `POST /simulate-failure`
+- `POST /restore`
+- `POST /reset`
+- `POST /record-health-check` (alias: `POST /simulate-health-check`)
+- `POST /costs/settings`
+
+Public endpoints (`GET /health`, `GET /state`, `GET /incidents`, `GET /costs`, `GET /costs/settings`, `GET /weather`) remain unauthenticated for seamless dashboard telemetry reading.
+
+### 3. Error Responses
+- **Missing or Invalid Key:** Returns `401 Unauthorized`:
+  ```json
+  {
+    "error": "Unauthorized",
+    "message": "Missing Authorization header. Expected 'Authorization: Bearer <key>'.",
+    "timestamp": "2026-10-18T10:00:00.000000Z"
+  }
+  ```
+- **Unconfigured Server Key:** If `PULSEBOX_API_KEY` is not set on the server, protected operations fail safely with `401 Unauthorized` without modifying state.
+
+### 4. Resource & Value Limits
+- **Maximum Request Size (`MAX_CONTENT_LENGTH`):** 16 KB. Requests exceeding this return `413 Payload Too Large`.
+- **Incident Storage Cap:** In-memory incident history is strictly capped at **100 entries**. When the 101st incident is recorded, the oldest entry is discarded.
+- **Monthly Budget Validation:** Values in `POST /costs/settings` must be finite numbers between `$0.01` and `$1,000,000.00`. Values exceeding `$1,000,000.00`, non-numeric strings, booleans, `NaN`, and `Infinity` are rejected with `400 Bad Request`.
+
+
+---
+
 ## 📡 API Endpoints
 
 ### 1. `GET /health`

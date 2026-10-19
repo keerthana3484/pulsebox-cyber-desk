@@ -63,6 +63,27 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // 3.5. Demo Mode Toggle
+  const demoToggleBtn = document.getElementById("sim-demo-toggle");
+  function updateDemoButtonUi() {
+    if (!demoToggleBtn) return;
+    const isDemo = simulator.isDemoMode;
+    demoToggleBtn.classList.toggle("active", isDemo);
+    demoToggleBtn.textContent = isDemo ? "🎮 DEMO: ON" : "🎮 DEMO: OFF";
+  }
+
+  if (demoToggleBtn) {
+    updateDemoButtonUi();
+    demoToggleBtn.addEventListener("click", () => {
+      simulator.toggleDemoMode();
+      updateDemoButtonUi();
+    });
+  }
+
+  simulator.subscribeStateChange(() => {
+    updateDemoButtonUi();
+  });
+
   // 4. CRT Scanlines Overlay Toggle
   const crtToggleBtn = document.getElementById("sim-crt-toggle");
   if (crtToggleBtn && crtScanlines) {
@@ -210,5 +231,47 @@ document.addEventListener("DOMContentLoaded", () => {
     lcdScreen.addEventListener("pointerup", handlePointerEnd);
     lcdScreen.addEventListener("pointercancel", handlePointerEnd);
     lcdScreen.addEventListener("pointerleave", handlePointerEnd);
+  }
+
+  // 9. Direct URL Query Parameter Navigation (?screen=costs&view=detail or ?screen=2)
+  const urlParams = new URLSearchParams(window.location.search);
+  const screenParam = urlParams.get("screen");
+  if (screenParam) {
+    const screenMap = {
+      home: 0,
+      status: 0,
+      servers: 1,
+      cluster: 1,
+      incidents: 2,
+      costs: 3,
+      cloudcosts: 3,
+      cloud: 3,
+      deploy: 4,
+      pipeline: 4,
+      companion: 5,
+      weather: 5,
+      clock: 5,
+      focustimer: 6,
+      timer: 6,
+      focus: 6,
+      settings: 7,
+      config: 7,
+    };
+    const targetIdx = isNaN(parseInt(screenParam, 10))
+      ? screenMap[screenParam.toLowerCase()] ?? 0
+      : parseInt(screenParam, 10);
+    simulator.switchScreen(targetIdx);
+
+    const viewParam = urlParams.get("view");
+    if (viewParam === "detail") {
+      setTimeout(() => {
+        const heroStage = document.getElementById("hero-overview-stage");
+        const detailStage = document.getElementById("screen-detail-stage");
+        if (heroStage && detailStage) {
+          heroStage.classList.add("is-hidden");
+          detailStage.classList.add("is-active");
+        }
+      }, 50);
+    }
   }
 });

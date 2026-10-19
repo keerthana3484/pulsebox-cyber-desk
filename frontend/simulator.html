@@ -7,15 +7,16 @@
   <meta name="description" content="Dedicated standalone 320x240 landscape embedded screen simulator for the ESP32 + 2.8-inch SPI touchscreen hardware fixture.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=JetBrains+Mono:wght@400;500;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/src/style.css">
   <link rel="stylesheet" href="/src/simulatorStyle.css">
+  <link rel="stylesheet" href="/src/voxelComponents.css">
 </head>
 <body class="standalone-sim-body" data-theme="amber-orange">
   <!-- Top Simulator Toolbar -->
   <header class="sim-top-toolbar">
     <div class="sim-toolbar-left">
-      <a href="/index.html" class="sim-back-link" title="Return to Full Cyber Desk Workbench">
+      <a href="./index.html" class="sim-back-link" title="Return to Full Cyber Desk Workbench">
         <span>◀</span> WORKBENCH VIEW
       </a>
       <div class="sim-title-badge">
@@ -26,6 +27,8 @@
 
     <!-- Simulator Controls -->
     <div class="sim-toolbar-tools">
+      <button class="sim-tool-btn demo-btn" id="sim-demo-toggle" title="Toggle autonomous demo mode (runs without backend)">🎮 DEMO: OFF</button>
+
       <div class="sim-scale-group">
         <span class="sim-scale-label">ZOOM:</span>
         <button class="sim-tool-btn scale-btn" data-scale="1x">1X</button>

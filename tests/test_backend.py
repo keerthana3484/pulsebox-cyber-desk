@@ -34,11 +34,15 @@ from weather import (
 from notifier import notifier
 
 
+TEST_API_KEY = "test_pulsebox_secret_key_123"
+
+
 @pytest.fixture(autouse=True)
 def reset_state(monkeypatch):
     """Ensure every test starts with all servers in healthy online state, clean incidents, default costs, weather, and clean env."""
     monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
     monkeypatch.delenv("TELEGRAM_CHAT_ID", raising=False)
+    monkeypatch.setenv("PULSEBOX_API_KEY", TEST_API_KEY)
     state_manager.reset()
     cost_manager.reset()
     weather_manager.reset()
@@ -50,7 +54,16 @@ def reset_state(monkeypatch):
 
 @pytest.fixture
 def client():
-    """Flask test client."""
+    """Flask test client configured with valid test API key."""
+    app.config["TESTING"] = True
+    with app.test_client() as client:
+        client.environ_base["HTTP_AUTHORIZATION"] = f"Bearer {TEST_API_KEY}"
+        yield client
+
+
+@pytest.fixture
+def unauth_client():
+    """Flask test client without authorization header."""
     app.config["TESTING"] = True
     with app.test_client() as client:
         yield client
@@ -1268,8 +1281,9 @@ def test_server_config_defaults(monkeypatch):
 
 
 def test_server_config_custom_host_lan(monkeypatch):
-    """Verify setting HOST=0.0.0.0 is respected for LAN accessibility."""
+    """Verify setting HOST=0.0.0.0 is respected when explicit LAN opt-in is enabled."""
     monkeypatch.setenv("HOST", "0.0.0.0")
+    monkeypatch.setenv("PULSEBOX_ALLOW_LAN", "true")
     monkeypatch.delenv("PORT", raising=False)
     host, port = get_server_config()
     assert host == "0.0.0.0"
@@ -1286,8 +1300,9 @@ def test_server_config_custom_port(monkeypatch):
 
 
 def test_server_config_both_host_and_port(monkeypatch):
-    """Verify both custom HOST and PORT are applied together."""
+    """Verify both custom HOST and PORT are applied together with explicit LAN opt-in."""
     monkeypatch.setenv("HOST", "0.0.0.0")
+    monkeypatch.setenv("PULSEBOX_ALLOW_LAN", "true")
     monkeypatch.setenv("PORT", "8080")
     host, port = get_server_config()
     assert host == "0.0.0.0"
@@ -1310,6 +1325,306 @@ def test_cors_configuration_remains_strict():
     assert "*" not in ALLOWED_ORIGINS
     for origin in ALLOWED_ORIGINS:
         assert origin.startswith("http://localhost:") or origin.startswith("http://127.0.0.1:")
+
+
+# ============================================================================
+# SECURITY REMEDIATION PHASE 1 TESTS
+# ============================================================================
+
+def test_post_endpoints_reject_missing_credentials(unauth_client):
+    """Every protected POST endpoint must return 401 when Authorization header is missing."""
+    endpoints = [
+        ("/simulate-failure", {"server_id": "srv-api"}),
+        ("/restore", {"server_id": "srv-api"}),
+        ("/reset", {}),
+        ("/record-health-check", {"server_id": "srv-api", "status": "failed"}),
+        ("/costs/settings", {"monthly_budget": 3000.0}),
+    ]
+    for url, payload in endpoints:
+        res = unauth_client.post(url, json=payload)
+        assert res.status_code == 401, f"{url} did not return 401 on missing auth"
+        data = res.get_json()
+        assert data["error"] == "Unauthorized"
+        assert "Missing Authorization header" in data["message"]
+        # Never leak the expected secret
+        assert TEST_API_KEY not in str(data)
+
+
+def test_post_endpoints_reject_invalid_key(unauth_client):
+    """Every protected POST endpoint must return 401 when an invalid key is supplied."""
+    endpoints = [
+        ("/simulate-failure", {"server_id": "srv-api"}),
+        ("/restore", {"server_id": "srv-api"}),
+        ("/reset", {}),
+        ("/record-health-check", {"server_id": "srv-api", "status": "failed"}),
+        ("/costs/settings", {"monthly_budget": 3000.0}),
+    ]
+    bad_headers = {"Authorization": "Bearer completely_wrong_secret_key_999"}
+    for url, payload in endpoints:
+        res = unauth_client.post(url, json=payload, headers=bad_headers)
+        assert res.status_code == 401, f"{url} did not return 401 on invalid key"
+        data = res.get_json()
+        assert data["error"] == "Unauthorized"
+        assert "Invalid API key" in data["message"]
+        assert TEST_API_KEY not in str(data)
+        assert "completely_wrong_secret_key_999" not in str(data)
+
+
+def test_post_endpoints_reject_malformed_auth_header(unauth_client):
+    """Rejects malformed Authorization header formats (missing Bearer, extra parts, empty)."""
+    malformed_headers = [
+        {"Authorization": "Basic dXNlcjpwYXNz"},
+        {"Authorization": "Bearer"},
+        {"Authorization": "Token 12345"},
+        {"Authorization": "Bearer key1 key2"},
+    ]
+    for headers in malformed_headers:
+        res = unauth_client.post("/simulate-failure", json={"server_id": "srv-api"}, headers=headers)
+        assert res.status_code == 401
+        data = res.get_json()
+        assert data["error"] == "Unauthorized"
+        assert "Invalid Authorization header format" in data["message"]
+
+
+def test_missing_server_api_key_fails_safely(unauth_client, monkeypatch):
+    """When PULSEBOX_API_KEY is not configured on the server, protected operations must fail safely with 401."""
+    monkeypatch.delenv("PULSEBOX_API_KEY", raising=False)
+    # Even if client supplies an authorization header, server must refuse protected operations
+    headers = {"Authorization": f"Bearer {TEST_API_KEY}"}
+    res = unauth_client.post("/simulate-failure", json={"server_id": "srv-api"}, headers=headers)
+    assert res.status_code == 401
+    data = res.get_json()
+    assert data["error"] == "Unauthorized"
+    assert "Server API key is not configured" in data["message"]
+
+
+def test_unauthorized_post_does_not_modify_state_or_notify(unauth_client, monkeypatch):
+    """Unauthorized requests must be rejected before any state changes, streak increments, or notifications occur."""
+    mock_sent = []
+    monkeypatch.setattr(notifier, "send_message", lambda text: mock_sent.append(text) or (True, "Delivered"))
+
+    # Verify initial nominal state
+    initial_server = state_manager.get_server_by_id("srv-api")
+    assert initial_server["status"] == "online"
+    assert initial_server["consecutive_failure_count"] == 0
+
+    # 1. Unauthorized simulate-failure
+    res_fail = unauth_client.post("/simulate-failure", json={"server_id": "srv-api"})
+    assert res_fail.status_code == 401
+    assert state_manager.get_server_by_id("srv-api")["status"] == "online"
+
+    # 2. Unauthorized record-health-check
+    for _ in range(3):
+        res_check = unauth_client.post("/record-health-check", json={"server_id": "srv-api", "status": "failed"})
+        assert res_check.status_code == 401
+
+    assert state_manager.get_server_by_id("srv-api")["consecutive_failure_count"] == 0
+    assert len(mock_sent) == 0, "Notification dispatched on unauthorized request!"
+
+    # 3. Unauthorized costs update
+    res_cost = unauth_client.post("/costs/settings", json={"monthly_budget": 50000.0})
+    assert res_cost.status_code == 401
+    assert cost_manager.monthly_budget == 2500.00
+
+
+def test_valid_api_key_allows_expected_operations(client):
+    """Valid credentials allow authorized operations as expected."""
+    # Simulate failure
+    res_fail = client.post("/simulate-failure", json={"server_id": "srv-api"})
+    assert res_fail.status_code == 200
+    assert state_manager.get_server_by_id("srv-api")["status"] == "failed"
+
+    # Restore server
+    res_restore = client.post("/restore", json={"server_id": "srv-api"})
+    assert res_restore.status_code == 200
+    assert state_manager.get_server_by_id("srv-api")["status"] == "online"
+
+    # Cost settings
+    res_cost = client.post("/costs/settings", json={"monthly_budget": 3500.0})
+    assert res_cost.status_code == 200
+    assert cost_manager.monthly_budget == 3500.0
+
+
+def test_incident_storage_never_exceeds_maximum():
+    """Incident storage is strictly capped at MAX_INCIDENTS (100). Older incidents are predictably discarded."""
+    assert state_manager.MAX_INCIDENTS == 100
+    state_manager.clear_incidents()
+
+    # Generate 120 distinct incidents
+    for i in range(1, 121):
+        streak = i
+        inc = {
+            "id": f"INC-{i:03d}",
+            "server_id": "srv-api",
+            "server_name": "API Gateway",
+            "severity": "CRITICAL",
+            "message": f"Test incident {i}",
+            "created_at": f"2026-10-18T10:{i:02d}:00Z" if i < 60 else f"2026-10-18T11:{i-60:02d}:00Z",
+            "consecutive_failure_count": 3,
+            "status": "OPEN",
+        }
+        state_manager.incidents.append(inc)
+        if len(state_manager.incidents) > state_manager.MAX_INCIDENTS:
+            state_manager.incidents = state_manager.incidents[-state_manager.MAX_INCIDENTS:]
+
+    # Assert exactly 100 incidents remain in memory
+    assert len(state_manager.incidents) == 100
+    all_incidents = state_manager.get_incidents()
+    assert len(all_incidents) == 100
+
+    # Oldest 20 incidents (INC-001 to INC-020) must be discarded
+    remaining_ids = {inc["id"] for inc in all_incidents}
+    for old_id in range(1, 21):
+        assert f"INC-{old_id:03d}" not in remaining_ids
+    # Newest incidents must be preserved
+    assert "INC-120" in remaining_ids
+    assert "INC-021" in remaining_ids
+
+
+def test_oversized_payload_returns_413(client):
+    """Requests exceeding MAX_CONTENT_LENGTH (16 KB) return HTTP 413 Payload Too Large."""
+    # Create payload larger than 16 KB (e.g. 24 KB of junk JSON)
+    oversized_data = "x" * (24 * 1024)
+    res = client.post("/costs/settings", json={"monthly_budget": 3000.0, "padding": oversized_data})
+    assert res.status_code == 413
+    data = res.get_json()
+    assert data["error"] == "Payload Too Large"
+    assert "16 KB" in data["message"]
+
+
+def test_post_cost_settings_rejects_excessive_budget(client):
+    """Rejects monthly budget exceeding MAX_BUDGET ($1,000,000.00)."""
+    # Exceeding by $1
+    res = client.post("/costs/settings", json={"monthly_budget": 1_000_000.01})
+    assert res.status_code == 400
+    data = res.get_json()
+    assert "Budget exceeds maximum allowable amount" in data["message"]
+
+    # Astronomical numbers
+    res2 = client.post("/costs/settings", json={"monthly_budget": 1e12})
+    assert res2.status_code == 400
+
+    # Exact max budget ($1,000,000.00) is allowed
+    res_max = client.post("/costs/settings", json={"monthly_budget": 1_000_000.00})
+    assert res_max.status_code == 200
+    assert res_max.get_json()["settings"]["monthly_budget"] == 1_000_000.00
+
+
+def test_post_cost_settings_rejects_non_finite_budget(client):
+    """Rejects NaN and Infinity budget inputs."""
+    res_nan = client.post("/costs/settings", json={"monthly_budget": "NaN"})
+    assert res_nan.status_code == 400
+
+    res_inf = client.post("/costs/settings", json={"monthly_budget": "Infinity"})
+    assert res_inf.status_code == 400
+
+
+def test_get_endpoints_remain_accessible_without_auth(unauth_client):
+    """All GET endpoints must remain unauthenticated and fully compatible with existing dashboard."""
+    get_endpoints = ["/health", "/state", "/incidents", "/costs", "/costs/settings", "/weather"]
+    for url in get_endpoints:
+        res = unauth_client.get(url)
+        assert res.status_code == 200, f"GET {url} failed with {res.status_code}"
+        assert res.is_json
+
+
+# =============================================================================
+# Security Pass: Host Binding, Explicit LAN Opt-In & Rate Limiting Tests
+# =============================================================================
+
+def test_get_server_config_defaults_to_localhost(monkeypatch):
+    """Default server host binding is strictly 127.0.0.1 (localhost loopback)."""
+    monkeypatch.delenv("HOST", raising=False)
+    monkeypatch.delenv("PORT", raising=False)
+    monkeypatch.delenv("PULSEBOX_ALLOW_LAN", raising=False)
+    host, port = get_server_config()
+    assert host == "127.0.0.1"
+    assert port == 5000
+
+
+def test_get_server_config_rejects_lan_without_explicit_opt_in(monkeypatch):
+    """Setting HOST=0.0.0.0 without PULSEBOX_ALLOW_LAN=true safely falls back to 127.0.0.1."""
+    monkeypatch.setenv("HOST", "0.0.0.0")
+    monkeypatch.delenv("PULSEBOX_ALLOW_LAN", raising=False)
+    host, port = get_server_config()
+    assert host == "127.0.0.1"
+
+    monkeypatch.setenv("PULSEBOX_ALLOW_LAN", "false")
+    host2, _ = get_server_config()
+    assert host2 == "127.0.0.1"
+
+
+def test_get_server_config_allows_lan_mode_with_explicit_opt_in(monkeypatch):
+    """Setting HOST=0.0.0.0 with PULSEBOX_ALLOW_LAN=true allows binding to 0.0.0.0."""
+    monkeypatch.setenv("HOST", "0.0.0.0")
+    monkeypatch.setenv("PULSEBOX_ALLOW_LAN", "true")
+    host, port = get_server_config()
+    assert host == "0.0.0.0"
+    assert port == 5000
+
+
+def test_all_state_changing_endpoints_reject_unauthenticated(unauth_client):
+    """Every state-changing POST endpoint must reject requests missing Authorization with 401."""
+    endpoints = [
+        ("/simulate-failure", {"server_id": "srv-api"}),
+        ("/restore", {"server_id": "srv-api"}),
+        ("/reset", {}),
+        ("/record-health-check", {"server_id": "srv-api", "status": "failed"}),
+        ("/costs/settings", {"monthly_budget": 2500.0}),
+    ]
+    for url, payload in endpoints:
+        res = unauth_client.post(url, json=payload)
+        assert res.status_code == 401, f"POST {url} allowed unauthenticated access (got {res.status_code})"
+        data = res.get_json()
+        assert data["error"] == "Unauthorized"
+
+
+def test_input_validation_server_id_format(client):
+    """Rejects malformed server_id with invalid characters or excessive length."""
+    # Special characters / path traversal attempts
+    invalid_ids = [
+        "../srv-api",
+        "srv;rm -rf",
+        "<script>alert(1)</script>",
+        "srv name with spaces",
+        "a" * 65,  # Exceeds 64 chars
+    ]
+    for bad_id in invalid_ids:
+        res = client.post("/simulate-failure", json={"server_id": bad_id})
+        assert res.status_code in (400, 404), f"Expected rejection for '{bad_id}', got {res.status_code}"
+        if res.status_code == 400:
+            assert "Field 'server_id'" in res.get_json()["message"]
+
+
+def test_input_validation_costs_settings_rejects_boolean(client):
+    """Rejects boolean values for monthly_budget."""
+    res = client.post("/costs/settings", json={"monthly_budget": True})
+    assert res.status_code == 400
+    assert "cannot be a boolean" in res.get_json()["message"]
+
+
+def test_rate_limiting_enforcement(client, monkeypatch):
+    """Sliding-window rate limiter returns 429 when request threshold is exceeded."""
+    from app import _request_log
+    _request_log.clear()
+
+    monkeypatch.setenv("PULSEBOX_TEST_RATE_LIMIT", "1")
+    monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "5")
+
+    # Send 5 requests (allowed)
+    for i in range(5):
+        res = client.get("/health")
+        assert res.status_code == 200
+
+    # 6th request must be blocked with HTTP 429 Too Many Requests
+    res_blocked = client.get("/health")
+    assert res_blocked.status_code == 429
+    data = res_blocked.get_json()
+    assert data["error"] == "Too Many Requests"
+    assert "Rate limit exceeded" in data["message"]
+    _request_log.clear()
+
+
 
 
 

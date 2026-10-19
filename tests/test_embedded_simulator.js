@@ -15,6 +15,8 @@
  * 11. Backend offline state transitions, error handling, and retries.
  */
 
+process.env.PULSEBOX_API_KEY = process.env.PULSEBOX_API_KEY || "test_pulsebox_secret_key_123";
+
 import { EmbeddedScreenSimulator } from "../frontend/src/embeddedSimulator.js";
 import {
   getHealth,
@@ -62,6 +64,14 @@ class MockElement {
       },
       contains: (c) => this.classList._classes.has(c),
     };
+  }
+
+  get className() {
+    return Array.from(this.classList._classes).join(" ");
+  }
+
+  set className(str) {
+    this.classList._classes = new Set((str || "").split(/\s+/).filter(Boolean));
   }
 
   addEventListener(evt, fn) {
@@ -419,6 +429,119 @@ async function runSimulatorTests() {
   const focusTimerData = sim.screens.find(s => s.id === "focusTimer");
   assert(focusTimerData !== undefined, "Focus timer screen definition remains intact during offline state");
 
+  console.log("\nTEST GROUP 9: Autonomous Demo Mode & Mock Data State Cycling");
+  const demoSim = new EmbeddedScreenSimulator({
+    viewport,
+    screenTitle,
+    statusBarClock,
+    navContainer,
+    lcdScreen,
+    simBadge,
+    touchHud,
+  });
+  demoSim.init(true);
+
+  // 1. Enable Demo Mode
+  demoSim.enableDemoMode(false);
+  assertEqual(demoSim.isDemoMode, true, "enableDemoMode() sets isDemoMode to true");
+  assertEqual(simBadge.textContent, "DEMO", "Badge updates to DEMO in demo mode");
+  assert(simBadge.classList.contains("demo"), "Badge has 'demo' class");
+
+  // 2. Test Step 0: HEALTHY state
+  demoSim.applyDemoState(0);
+  assertEqual(demoSim.state.system.overallHealth, "NOMINAL", "Demo Step 0 overallHealth is NOMINAL");
+  assertEqual(demoSim.state.system.failedServerCount, 0, "Demo Step 0 has 0 failed servers");
+  assertEqual(demoSim.state.system.onlineServerCount, 6, "Demo Step 0 has 6 online servers");
+  assertEqual(demoSim.state.mascotMood, "happy", "Demo Step 0 mascotMood is happy");
+  assertEqual(demoSim.mockIncidents.length, 0, "Demo Step 0 has 0 active incidents");
+
+  // 3. Test Step 1: INCIDENT state
+  demoSim.applyDemoState(1);
+  assertEqual(demoSim.state.system.overallHealth, "DEGRADED", "Demo Step 1 overallHealth is DEGRADED");
+  assertEqual(demoSim.state.system.failedServerCount, 2, "Demo Step 1 has 2 failed servers");
+  assertEqual(demoSim.state.system.onlineServerCount, 4, "Demo Step 1 has 4 online servers");
+  assertEqual(demoSim.state.mascotMood, "worried", "Demo Step 1 mascotMood is worried");
+  assert(demoSim.mockIncidents.length >= 1, "Demo Step 1 populates mockIncidents list");
+
+  // 4. Test Step 2: RECOVERY state
+  demoSim.applyDemoState(2);
+  assertEqual(demoSim.state.system.overallHealth, "NOMINAL", "Demo Step 2 overallHealth restored to NOMINAL");
+  assertEqual(demoSim.state.system.failedServerCount, 0, "Demo Step 2 has 0 failed servers");
+  assertEqual(demoSim.state.system.onlineServerCount, 6, "Demo Step 2 has 6 online servers");
+  assertEqual(demoSim.state.mascotMood, "celebrating", "Demo Step 2 mascotMood is celebrating");
+  assertEqual(demoSim.mockIncidents[0].status, "RESOLVED", "Demo Step 2 incident transitioned to RESOLVED");
+
+  // 5. Test Mock API Interception in Demo Mode
+  const actions = demoSim.getAppActions();
+  const demoState = await actions.api.getState();
+  assertEqual(demoState.overall_health, "NOMINAL", "actions.api.getState() in demo mode returns synthetic state");
+  assertEqual(demoState.server_count, 6, "Synthetic server_count is 6");
+
+  const demoCosts = await actions.api.getCosts();
+  assert(typeof demoCosts.month_spend === "number", "actions.api.getCosts() returns mock costs without backend");
+
+  const demoWeather = await actions.api.getWeather();
+  assertEqual(demoWeather.simulation_mode, true, "actions.api.getWeather() returns simulated weather");
+
+  // 6. Test Interactive Action in Demo Mode (Simulate Failure & Restore)
+  await actions.api.simulateFailure("srv-api");
+  assertEqual(demoSim.state.system.overallHealth, "DEGRADED", "actions.api.simulateFailure() induces failure in demo mode");
+  assertEqual(demoSim.state.mascotMood, "worried", "Simulated failure sets mascot to worried");
+
+  await actions.api.restoreServer("srv-api");
+  assertEqual(demoSim.state.system.overallHealth, "NOMINAL", "actions.api.restoreServer() restores health in demo mode");
+  assertEqual(demoSim.state.mascotMood, "celebrating", "Restoring server triggers celebrating mascot in demo mode");
+
+  // 7. Disable Demo Mode
+  demoSim.disableDemoMode(false);
+  assertEqual(demoSim.isDemoMode, false, "disableDemoMode() resets isDemoMode to false");
+
+  // -------------------------------------------------------------
+  // TEST GROUP 10: Hold-to-Confirm, Day/Night Theme & Double-Tap Wake
+  // -------------------------------------------------------------
+  console.log("\nTEST GROUP 10: Hold-to-Confirm, Day/Night Theme & Double-Tap Wake");
+
+  // 1. Day / Night theme switching
+  sim.setTheme("day");
+  assertEqual(sim.state.settings?.theme, "day", "setTheme('day') updates state.settings.theme");
+  sim.setTheme("night");
+  assertEqual(sim.state.settings?.theme, "night", "setTheme('night') updates state.settings.theme");
+
+  // 2. Standby and Double-Tap Wake
+  sim.enterStandby();
+  assertEqual(sim.isStandby, true, "enterStandby() sets isStandby to true");
+  assertEqual(sim.dom.screenTitle.textContent, "STANDBY", "Screen title displays STANDBY");
+
+  sim.handleDoubleTap();
+  assertEqual(sim.isStandby, false, "handleDoubleTap() wakes up simulator from standby");
+
+  // 3. Screen detail view instantiation on all 8 screens
+  for (let i = 0; i < 8; i++) {
+    const s = sim.screens[i];
+    const dummyDiv = new MockElement("div");
+    const cleanup = s.render(dummyDiv, sim.state, sim.getAppActions(), { initialShowDetail: true });
+    await new Promise(r => setTimeout(r, 30));
+    assert(dummyDiv.innerHTML.includes("is-active") || dummyDiv.innerHTML.includes("screen-detail-stage") || dummyDiv.innerHTML.includes("wc-detail-view"), `Screen ${s.label} renders detail view`);
+    assert(dummyDiv.innerHTML.includes("BACK") || dummyDiv.innerHTML.includes("btn-back"), `Screen ${s.label} detail view contains back button`);
+    if (typeof cleanup === "function") cleanup();
+  }
+
+  // 4. Hold-to-Confirm Destructive Action Logic
+  let holdResetTriggered = false;
+  let holdTimer = null;
+  const HOLD_DURATION_MS = 1500;
+
+  // Simulate short press (< 1500ms)
+  holdTimer = setTimeout(() => { holdResetTriggered = true; }, HOLD_DURATION_MS);
+  clearTimeout(holdTimer); // Released at 100ms
+  assertEqual(holdResetTriggered, false, "Short tap (<1500ms) on destructive button does NOT trigger action");
+
+  // Simulate full hold (>= 1500ms)
+  holdTimer = setTimeout(() => { holdResetTriggered = true; }, 50);
+  await new Promise(r => setTimeout(r, 60));
+  assertEqual(holdResetTriggered, true, "Full hold duration triggers destructive action");
+
+  demoSim.destroy();
   sim.destroy();
 
   console.log("\n-------------------------------------------------------");

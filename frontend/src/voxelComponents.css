@@ -1,0 +1,733 @@
+/**
+ * PulseBox Cyber Desk — Voxel Component Stylesheet
+ * 
+ * Strict 8px modular grid geometry.
+ * Voxel bevels: 2px/4px highlight and shadow inset shadows.
+ * Zero rounded corners (border-radius: 0).
+ */
+
+/* ==========================================================================
+   1. BEVELED VOXEL BLOCK BUTTON
+   ========================================================================== */
+.voxel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-family: var(--font-pixel, 'Silkscreen', monospace);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 0;
+  border: 2px solid #000;
+  cursor: pointer;
+  user-select: none;
+  image-rendering: pixelated;
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
+  position: relative;
+}
+
+/* Button Variants */
+.voxel-btn.variant-primary {
+  background-color: #00E676;
+  color: #05070D;
+  box-shadow: 
+    inset 2px 2px 0 #69F0AE, 
+    inset -2px -2px 0 #00A352,
+    0 2px 0 #004D26;
+}
+
+.day-mode .voxel-btn.variant-primary {
+  background-color: #4E9A06;
+  color: #FFFFFF;
+  box-shadow: 
+    inset 2px 2px 0 #73D216, 
+    inset -2px -2px 0 #2E5C03,
+    0 2px 0 #1A3602;
+}
+
+.voxel-btn.variant-secondary {
+  background-color: #243048;
+  color: #E2E8F0;
+  box-shadow: 
+    inset 2px 2px 0 #374761, 
+    inset -2px -2px 0 #151D2E,
+    0 2px 0 #0B111E;
+}
+
+.day-mode .voxel-btn.variant-secondary {
+  background-color: #5A6577;
+  color: #FFFFFF;
+  box-shadow: 
+    inset 2px 2px 0 #9AA5B4, 
+    inset -2px -2px 0 #3B4252,
+    0 2px 0 #2E3440;
+}
+
+.voxel-btn.variant-danger {
+  background-color: #FF1744;
+  color: #FFFFFF;
+  box-shadow: 
+    inset 2px 2px 0 #FF5252, 
+    inset -2px -2px 0 #B71C1C,
+    0 2px 0 #5C0000;
+}
+
+.day-mode .voxel-btn.variant-danger {
+  background-color: #CC0000;
+  color: #FFFFFF;
+  box-shadow: 
+    inset 2px 2px 0 #EF2929, 
+    inset -2px -2px 0 #800000,
+    0 2px 0 #4A0000;
+}
+
+.voxel-btn.variant-caution {
+  background-color: #FFB300;
+  color: #05070D;
+  box-shadow: 
+    inset 2px 2px 0 #FFD54F, 
+    inset -2px -2px 0 #C68400,
+    0 2px 0 #664400;
+}
+
+.day-mode .voxel-btn.variant-caution {
+  background-color: #E5B83B;
+  color: #2E1F14;
+  box-shadow: 
+    inset 2px 2px 0 #F5D26D, 
+    inset -2px -2px 0 #997415,
+    0 2px 0 #4D3A0A;
+}
+
+/* Button States: Pressed */
+.voxel-btn:active,
+.voxel-btn.is-pressed,
+.voxel-btn.state-pressed {
+  transform: translateY(2px);
+  box-shadow: 
+    inset 2px 2px 0 rgba(0, 0, 0, 0.6),
+    inset -2px -2px 0 rgba(255, 255, 255, 0.2),
+    0 0 0 transparent !important;
+}
+
+/* Button States: Disabled */
+.voxel-btn:disabled,
+.voxel-btn.state-disabled {
+  background-color: #1F2937 !important;
+  color: #6B7280 !important;
+  border-color: #111827 !important;
+  box-shadow: inset 1px 1px 0 #374151, inset -1px -1px 0 #111827 !important;
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none !important;
+}
+
+/* ==========================================================================
+   2. HEART BAR & HUNGER BAR
+   ========================================================================== */
+.voxel-heart-bar,
+.voxel-hunger-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px;
+  background: rgba(11, 17, 30, 0.6);
+  border: 1px solid #162035;
+  image-rendering: pixelated;
+}
+
+.voxel-heart-svg,
+.voxel-hunger-svg {
+  flex-shrink: 0;
+  image-rendering: pixelated;
+}
+
+/* ==========================================================================
+   3. XP PROGRESS BAR
+   ========================================================================== */
+.voxel-xp-container {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  max-width: 280px;
+  height: 16px;
+}
+
+.voxel-xp-track {
+  width: 100%;
+  height: 8px;
+  background: #05070D;
+  border: 1px solid #162035;
+  box-shadow: inset 1px 1px 0 #000;
+  position: relative;
+  overflow: hidden;
+}
+
+.voxel-xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00BCD4, #00E676);
+  box-shadow: inset 0 1px 0 #69F0AE, 0 0 8px rgba(0, 230, 118, 0.5);
+  transition: width 0.3s steps(10);
+}
+
+.day-mode .voxel-xp-fill {
+  background: linear-gradient(90deg, #245C9E, #4E9A06);
+  box-shadow: inset 0 1px 0 #73D216;
+}
+
+.voxel-xp-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #05070D;
+  color: #00E676;
+  border: 1px solid #00E676;
+  font-family: var(--font-pixel, monospace);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  box-shadow: 0 0 6px rgba(0, 230, 118, 0.4);
+  line-height: 1;
+}
+
+.day-mode .voxel-xp-badge {
+  color: #4E9A06;
+  border-color: #4E9A06;
+  background: #1A1C23;
+  box-shadow: none;
+}
+
+/* ==========================================================================
+   4. INVENTORY SLOT
+   ========================================================================== */
+.voxel-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #151D2E;
+  border: 2px solid #05070D;
+  box-shadow: 
+    inset 2px 2px 0 #080C14,
+    inset -2px -2px 0 #243048;
+  cursor: pointer;
+  user-select: none;
+  image-rendering: pixelated;
+  transition: border-color 0.1s, box-shadow 0.1s;
+}
+
+.day-mode .voxel-slot {
+  background: #4C566A;
+  border-color: #1A1C23;
+  box-shadow: 
+    inset 2px 2px 0 #2E3440,
+    inset -2px -2px 0 #5A6577;
+}
+
+.voxel-slot:hover {
+  background: #1C2638;
+}
+
+.voxel-slot.is-selected {
+  border-color: #00E5FF;
+  box-shadow: 
+    inset 2px 2px 0 #006677,
+    inset -2px -2px 0 #69F0AE,
+    0 0 8px rgba(0, 229, 255, 0.6);
+}
+
+.voxel-slot.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.voxel-slot-count {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  font-family: var(--font-pixel, monospace);
+  font-size: 8px;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   5. HOTBAR NAVIGATION (8 Slots x 40px = 320px)
+   ========================================================================== */
+.voxel-hotbar {
+  display: grid;
+  grid-template-columns: repeat(8, 40px);
+  width: 320px;
+  height: 32px;
+  background: #0B111E;
+  border-top: 2px solid #162035;
+  image-rendering: pixelated;
+  user-select: none;
+}
+
+.day-mode .voxel-hotbar {
+  background: #2E3440;
+  border-top-color: #5A6577;
+}
+
+.voxel-hotbar-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  border-right: 1px solid #162035;
+  cursor: pointer;
+  position: relative;
+  background: #0B111E;
+  transition: background 0.1s;
+}
+
+.day-mode .voxel-hotbar-slot {
+  background: #2E3440;
+  border-right-color: #3B4252;
+}
+
+.voxel-hotbar-slot:last-child {
+  border-right: none;
+}
+
+.voxel-hotbar-slot .slot-idx-tag {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 6px;
+  color: #64748B;
+  line-height: 1;
+}
+
+.voxel-hotbar-slot .slot-label {
+  font-family: var(--font-pixel, monospace);
+  font-size: 8px;
+  font-weight: 700;
+  color: #8899AC;
+  line-height: 1;
+  margin-top: 4px;
+}
+
+.voxel-hotbar-slot:hover {
+  background: #151D2E;
+}
+
+.voxel-hotbar-slot.is-active {
+  background: #151D2E;
+  box-shadow: 
+    inset 0 -3px 0 #00E676,
+    inset 0 2px 0 rgba(0, 230, 118, 0.3);
+}
+
+.day-mode .voxel-hotbar-slot.is-active {
+  background: #3B4252;
+  box-shadow: 
+    inset 0 -3px 0 #73D216,
+    inset 0 2px 0 rgba(115, 210, 22, 0.4);
+}
+
+.voxel-hotbar-slot.is-active .slot-label {
+  color: #FFFFFF;
+}
+
+/* ==========================================================================
+   6. ALERT BANNER
+   ========================================================================== */
+.voxel-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 2px solid;
+  width: 100%;
+  max-width: 300px;
+  font-family: var(--font-pixel, monospace);
+  image-rendering: pixelated;
+}
+
+.voxel-alert-banner.alert-nominal {
+  background: #061A12;
+  border-color: #00E676;
+  box-shadow: inset 1px 1px 0 #00E676, inset -1px -1px 0 #003319;
+}
+
+.voxel-alert-banner.alert-nominal .alert-icon-box {
+  background: #00E676;
+  color: #05070D;
+}
+
+.voxel-alert-banner.alert-nominal .alert-title {
+  color: #00E676;
+}
+
+.voxel-alert-banner.alert-warning {
+  background: #241A05;
+  border-color: #FFB300;
+  box-shadow: inset 1px 1px 0 #FFB300, inset -1px -1px 0 #4D3600;
+}
+
+.voxel-alert-banner.alert-warning .alert-icon-box {
+  background: #FFB300;
+  color: #05070D;
+}
+
+.voxel-alert-banner.alert-warning .alert-title {
+  color: #FFB300;
+}
+
+.voxel-alert-banner.alert-critical {
+  background: #24080D;
+  border-color: #FF1744;
+  box-shadow: inset 1px 1px 0 #FF1744, inset -1px -1px 0 #4D000C;
+}
+
+.voxel-alert-banner.alert-critical .alert-icon-box {
+  background: #FF1744;
+  color: #FFFFFF;
+}
+
+.voxel-alert-banner.alert-critical .alert-title {
+  color: #FF1744;
+}
+
+.alert-icon-box {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.alert-text-group {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.alert-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.alert-msg {
+  font-size: 8px;
+  color: #E2E8F0;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.alert-dismiss-btn {
+  background: transparent;
+  border: 1px solid #374761;
+  color: #94A3B8;
+  font-family: var(--font-pixel, monospace);
+  font-size: 9px;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert-dismiss-btn:hover {
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+
+/* ==========================================================================
+   7. PULSEBOT MASCOT EXPRESSION CONTAINERS
+   ========================================================================== */
+.pulsebot-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  background: #0B111E;
+  border: 2px solid #162035;
+  box-shadow: inset 1px 1px 0 #243048, inset -1px -1px 0 #05070D;
+}
+
+.pulsebot-card .mascot-caption {
+  font-family: var(--font-pixel, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  color: #00E5FF;
+  margin-top: 8px;
+  text-transform: uppercase;
+}
+
+.pulsebot-mascot-svg {
+  image-rendering: pixelated;
+  shape-rendering: crispEdges;
+}
+
+/* ==========================================================================
+   8. VOXEL SCREEN HERO / DETAIL VIEW SYSTEM (320x240 LCD Viewport)
+   ========================================================================== */
+.screen-voxel-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-pixel, 'Silkscreen', monospace);
+  box-sizing: border-box;
+}
+
+.screen-hero-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  text-align: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.screen-hero-view.is-hidden {
+  display: none !important;
+}
+
+.screen-detail-view {
+  display: none;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  overflow-y: auto;
+  user-select: none;
+}
+
+.screen-detail-view.is-active {
+  display: flex !important;
+}
+
+/* Hero Elements */
+.voxel-hero-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.voxel-hero-metric {
+  font-family: var(--font-pixel, 'Silkscreen', monospace);
+  font-size: 20px;
+  font-weight: 700;
+  color: #00E5FF;
+  letter-spacing: 1px;
+  line-height: 1.2;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+}
+
+.voxel-hero-metric.status-nominal {
+  color: #00E676;
+  text-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
+}
+
+.voxel-hero-metric.status-warning {
+  color: #FFB300;
+  text-shadow: 0 0 8px rgba(255, 179, 0, 0.4);
+}
+
+.voxel-hero-metric.status-alert {
+  color: #FF1744;
+  text-shadow: 0 0 8px rgba(255, 23, 68, 0.4);
+}
+
+.voxel-hero-status {
+  font-family: var(--font-pixel, 'Silkscreen', monospace);
+  font-size: 10px;
+  font-weight: 700;
+  color: #94A3B8;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.voxel-hero-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* Detail Elements */
+.voxel-detail-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #162035;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.voxel-detail-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #00E5FF;
+  letter-spacing: 0.5px;
+}
+
+.voxel-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  font-family: var(--font-pixel, 'Silkscreen', monospace);
+  font-size: 9px;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   DAY / NIGHT SKY & CELESTIAL HERO
+   ========================================================================== */
+.voxel-sky-hero {
+  width: 100%;
+  height: 52px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border: 2px solid #05070D;
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.1), 0 2px 0 rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.voxel-sky-hero.day-sky {
+  background: #4A90E2;
+  border-color: #245C9E;
+}
+
+.voxel-sky-hero.night-sky {
+  background: #05070D;
+  border-color: #151D2E;
+}
+
+.voxel-sky-stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-image: 
+    radial-gradient(1px 1px at 20px 10px, #E2E8F0, transparent),
+    radial-gradient(1px 1px at 70px 25px, #00E5FF, transparent),
+    radial-gradient(1px 1px at 140px 12px, #E2E8F0, transparent),
+    radial-gradient(1px 1px at 210px 30px, #69F0AE, transparent),
+    radial-gradient(1px 1px at 280px 18px, #E2E8F0, transparent),
+    radial-gradient(2px 2px at 100px 42px, #E2E8F0, transparent),
+    radial-gradient(1px 1px at 170px 45px, #00E5FF, transparent),
+    radial-gradient(1px 1px at 250px 8px, #FFD54F, transparent);
+}
+
+.voxel-clock-hero-digits {
+  font-family: var(--font-pixel, 'Silkscreen', monospace);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #00E5FF;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.5), 2px 2px 0 #05070D;
+  line-height: 1;
+  z-index: 2;
+}
+
+.day-sky .voxel-clock-hero-digits {
+  color: #FFFFFF;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.6), 2px 2px 0 #245C9E;
+}
+
+/* ==========================================================================
+   SCREEN TRANSITIONS: 8-STEP CHUNKY BLOCK WIPE
+   ========================================================================== */
+@keyframes voxelBlockWipeForward {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    transform: translateX(12px);
+    opacity: 0.6;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes voxelBlockWipeBackward {
+  0% {
+    clip-path: inset(0 0 0 100%);
+    transform: translateX(-12px);
+    opacity: 0.6;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.voxel-block-wipe-forward {
+  animation: voxelBlockWipeForward 0.22s steps(8) forwards;
+  will-change: clip-path, transform;
+}
+
+.voxel-block-wipe-backward {
+  animation: voxelBlockWipeBackward 0.22s steps(8) forwards;
+  will-change: clip-path, transform;
+}
+
+/* ==========================================================================
+   IDLE ANIMATIONS & DOUBLE-TAP WAKE FEEDBACK
+   ========================================================================== */
+.pulse-beacon {
+  transition: opacity 0.16s steps(2);
+  will-change: opacity;
+}
+
+.tap-confirm-pulse {
+  color: #FFEB3B !important;
+  text-shadow: 0 0 8px #FFD54F !important;
+  animation: pulseTapConfirm 0.45s steps(4) infinite !important;
+}
+
+@keyframes pulseTapConfirm {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.04);
+  }
+}
+
+

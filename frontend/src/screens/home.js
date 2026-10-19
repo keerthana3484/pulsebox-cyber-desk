@@ -1,120 +1,163 @@
-// Screen 1: HOME — Real-time telemetry linked to Flask backend API
+// Screen 1: HOME — System status and telemetry linked to Flask API
+// Follows docs/UI_RULES.md: 1 hero element, max 3 text elements, <= 12 words on overview,
+// tap-through detail view with [< BACK] button.
 
-export function renderHomeScreen(container, state, appActions) {
+import {
+  getPulseBotMascotSvg,
+  getItemIconSvg,
+  buildVoxelButton,
+} from "../voxelComponents.js";
+
+export function renderHomeScreen(container, state, appActions, options = {}) {
   let isChecking = false;
+  let showDetail = options.initialShowDetail ?? false;
 
   function formatUptime(seconds) {
+    if (!seconds && seconds !== 0) return "--";
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
-    return `${hrs}h ${mins}m`;
+    return `${hrs}H ${mins}M`;
   }
 
   function render() {
     const isConnected = state.backendConnected === true;
     const isOffline = state.backendConnected === false;
 
-    // Use backend response as single source of truth for cluster state
+    // Backend response as single source of truth
     const overallHealth = isConnected ? state.system.overallHealth : "OFFLINE";
-    const serverCount = isConnected ? (state.system.serverCount ?? state.servers.length) : "--";
-    const failedCount = isConnected ? (state.system.failedServerCount ?? 0) : "--";
-    const onlineCount = isConnected ? (state.system.onlineServerCount ?? 0) : "--";
+    const serverCount = isConnected ? (state.system.serverCount ?? state.servers.length) : 6;
+    const failedCount = isConnected ? (state.system.failedServerCount ?? 0) : 0;
+    const onlineCount = isConnected ? (state.system.onlineServerCount ?? serverCount) : 0;
     const avgLatency = isConnected ? `${state.system.averageLatencyMs ?? 0}ms` : "-- ms";
-
-    const healthColorClass = isOffline
-      ? "red"
-      : overallHealth === "NOMINAL"
-      ? "green"
-      : overallHealth === "DEGRADED"
-      ? "amber"
-      : "red";
+    const isNominal = !isOffline && overallHealth === "NOMINAL" && failedCount === 0;
 
     const uptimeStr = formatUptime(state.system.uptimeSeconds);
-    const heapKb = Math.round(state.system.freeHeapBytes / 1024);
+    const heapKb = Math.round((state.system.freeHeapBytes || 221184) / 1024);
+
+    const mascotExp = state.mascotMood || (isNominal ? "happy" : "worried");
+    const mascotSvg = getPulseBotMascotSvg(mascotExp, 48);
+    const shieldSvg = getItemIconSvg(isNominal ? "shield" : "battery", 36);
 
     const displayMsg = isOffline
       ? "BACKEND OFFLINE: Unable to reach Flask API @ 127.0.0.1:5000. Retrying..."
       : state.system.lastEvent || "All subsystems nominal. Cluster synchronized with Flask API.";
 
     container.innerHTML = `
-      <div class="screen-content screen-home-minimal">
-        <!-- Top Status Strip -->
-        <div class="minimal-strip">
-          <div class="status-indicator-group">
-            <span class="status-dot ${healthColorClass}"></span>
-            <span class="strip-title ${isOffline ? 'red-text' : ''}">
-              ${isOffline ? 'BACKEND OFFLINE' : `SYS ${overallHealth}`}
-            </span>
-          </div>
-          <span class="strip-meta">UP: ${uptimeStr}</span>
-          <span class="strip-meta highlight">${state.system.coreTempC}°C</span>
-          <span class="strip-meta">${state.system.batteryVoltage}V</span>
-        </div>
-
-        <div class="thin-separator"></div>
-
-        <!-- 2x2 Dense Telemetry Grid (Driven by API) -->
-        <div class="home-metrics-grid">
-          <div class="metric-cell">
-            <span class="cell-label">SERVICES (SIMULATED)</span>
-            <div class="cell-value-row">
-              <span class="cell-val ${healthColorClass}">${onlineCount}/${serverCount}</span>
-              <span class="cell-sub">
-                ${isOffline ? 'DISCONNECTED' : failedCount > 0 ? `${failedCount} FAILED` : 'ALL NOMINAL'}
-              </span>
+      <div class="screen-voxel-wrapper screen-content screen-home-minimal">
+        <!-- 1. HERO OVERVIEW VIEW (Strict 1-Second Glanceable, <= 3 text elements, <= 12 words) -->
+        <div class="screen-hero-view ${showDetail ? 'is-hidden' : ''}" id="hero-overview-stage">
+          <div class="voxel-hero-visual">
+            ${mascotSvg}
+            <div style="display: flex; align-items: center; justify-content: center;">
+              ${shieldSvg}
             </div>
           </div>
 
-          <div class="metric-cell">
-            <span class="cell-label">AVG LATENCY</span>
-            <div class="cell-value-row">
-              <span class="cell-val ${!isOffline && parseFloat(avgLatency) > 50 ? 'amber' : 'highlight'}">
-                ${avgLatency}
-              </span>
-              <span class="cell-sub">${isOffline ? 'NO SYNC' : 'API SYNCED'}</span>
-            </div>
+          <div class="voxel-hero-metric ${isNominal ? 'status-nominal' : isOffline ? 'status-alert' : 'status-warning'}" id="home-hero-metric">
+            ${isOffline ? 'SYS OFFLINE' : isNominal ? 'SYS NOMINAL' : 'SYS DEGRADED'}
           </div>
 
-          <div class="metric-cell">
-            <span class="cell-label">FREE HEAP</span>
-            <div class="cell-value-row">
-              <span class="cell-val">${heapKb}K</span>
-              <span class="cell-sub">/ 328K (66%)</span>
-            </div>
+          <div class="voxel-hero-status" id="home-hero-status">
+            ${isOffline ? 'NO SYNC' : `UPTIME ${uptimeStr}`}
           </div>
 
-          <div class="metric-cell">
-            <span class="cell-label">LINK / RSSI</span>
-            <div class="cell-value-row">
-              <span class="cell-val">${state.system.wifiRssi}dBm</span>
-              <span class="cell-sub">${state.system.wifiSsid}</span>
-            </div>
+          <div class="voxel-hero-actions">
+            <button class="voxel-btn ${isNominal ? 'variant-secondary' : 'variant-danger'}" id="btn-home-detail">
+              TELEMETRY ▶
+            </button>
           </div>
         </div>
 
-        <div class="thin-separator"></div>
+        <!-- 2. TAP-THROUGH DETAIL VIEW (2x2 Telemetry Grid & Diagnostic Controls) -->
+        <div class="screen-detail-view ${showDetail ? 'is-active' : ''}">
+          <!-- Navigation Back Row -->
+          <div class="voxel-detail-nav-row">
+            <button class="voxel-btn variant-secondary voxel-back-btn" id="btn-back-overview">
+              ◀ BACK
+            </button>
+            <span class="voxel-detail-title">SYSTEM TELEMETRY</span>
+            <span class="sim-tag-mini">[LIVE]</span>
+          </div>
 
-        <!-- System Message Box -->
-        <div class="sys-msg-row ${isOffline ? 'offline-banner' : ''}">
-          <span class="msg-prefix">${isOffline ? '[ERR]' : '[SYS]'}</span>
-          <span class="msg-body" id="home-sys-msg">${displayMsg}</span>
-        </div>
+          <!-- 2x2 Telemetry Grid -->
+          <div class="home-metrics-grid" style="margin-bottom: 4px;">
+            <div class="metric-cell">
+              <span class="cell-label">SERVICES</span>
+              <div class="cell-value-row">
+                <span class="cell-val ${isNominal ? 'green' : 'red'}">${onlineCount}/${serverCount}</span>
+                <span class="cell-sub">${isOffline ? 'OFFLINE' : failedCount > 0 ? `${failedCount} FAILED` : 'NOMINAL'}</span>
+              </div>
+            </div>
 
-        <!-- Bottom Touch Actions -->
-        <div class="home-actions-row">
-          <button class="cyber-btn sm" id="btn-run-diag" ${isChecking ? 'disabled' : ''}>
-            <span class="btn-icon">⚡</span> ${isChecking ? 'TESTING...' : 'DIAGNOSTICS'}
-          </button>
-          <button class="cyber-btn sm secondary" id="btn-quick-ping" ${isChecking ? 'disabled' : ''}>
-            <span class="btn-icon">📡</span> SYNC / PING
-          </button>
+            <div class="metric-cell">
+              <span class="cell-label">AVG LATENCY</span>
+              <div class="cell-value-row">
+                <span class="cell-val highlight">${avgLatency}</span>
+                <span class="cell-sub">${isOffline ? 'NO SYNC' : 'API SYNCED'}</span>
+              </div>
+            </div>
+
+            <div class="metric-cell">
+              <span class="cell-label">FREE HEAP</span>
+              <div class="cell-value-row">
+                <span class="cell-val">${heapKb}K</span>
+                <span class="cell-sub">/ 328K</span>
+              </div>
+            </div>
+
+            <div class="metric-cell">
+              <span class="cell-label">LINK / RSSI</span>
+              <div class="cell-value-row">
+                <span class="cell-val">${state.system.wifiRssi || -48}dBm</span>
+                <span class="cell-sub">${state.system.wifiSsid || 'PulseNet-5G'}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- System Message Box -->
+          <div class="sys-msg-row ${isOffline ? 'offline-banner' : ''}" style="margin-bottom: 4px;">
+            <span class="msg-prefix">${isOffline ? '[ERR]' : '[SYS]'}</span>
+            <span class="msg-body" id="home-sys-msg">${displayMsg}</span>
+          </div>
+
+          <!-- Bottom Diagnostic Touch Controls -->
+          <div class="home-actions-row" style="display:flex; gap:6px;">
+            <button class="voxel-btn variant-primary xs" id="btn-run-diag" ${isChecking ? 'disabled' : ''} style="flex:1;">
+              ⚡ ${isChecking ? 'TESTING...' : 'DIAGNOSTICS'}
+            </button>
+            <button class="voxel-btn variant-secondary xs" id="btn-quick-ping" ${isChecking ? 'disabled' : ''} style="flex:1;">
+              📡 SYNC / PING
+            </button>
+          </div>
         </div>
       </div>
     `;
 
-    // Bind Diagnostics button: runs health check against Flask API
+    // Bind event handlers
+    const detailBtn = container.querySelector("#btn-home-detail");
+    if (detailBtn) {
+      detailBtn.addEventListener("click", (e) => {
+        e?.stopPropagation?.();
+        appActions.playClick();
+        showDetail = true;
+        render();
+      });
+    }
+
+    const backBtn = container.querySelector("#btn-back-overview");
+    if (backBtn) {
+      backBtn.addEventListener("click", (e) => {
+        e?.stopPropagation?.();
+        appActions.playClick();
+        showDetail = false;
+        render();
+      });
+    }
+
     const diagBtn = container.querySelector("#btn-run-diag");
     if (diagBtn) {
-      diagBtn.addEventListener("click", async () => {
+      diagBtn.addEventListener("click", async (e) => {
+        e?.stopPropagation?.();
         appActions.playClick();
         isChecking = true;
         render();
@@ -137,10 +180,10 @@ export function renderHomeScreen(container, state, appActions) {
       });
     }
 
-    // Bind Ping button: forces immediate refresh of state from Flask API
     const pingBtn = container.querySelector("#btn-quick-ping");
     if (pingBtn) {
-      pingBtn.addEventListener("click", async () => {
+      pingBtn.addEventListener("click", async (e) => {
+        e?.stopPropagation?.();
         appActions.playClick();
         isChecking = true;
         render();

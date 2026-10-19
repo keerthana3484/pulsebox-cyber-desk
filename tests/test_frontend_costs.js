@@ -14,6 +14,8 @@
 import { getCosts, getCostSettings, updateCostBudget } from "../frontend/src/api.js";
 import { renderCloudCostsScreen } from "../frontend/src/screens/cloudCosts.js";
 
+process.env.PULSEBOX_API_KEY = process.env.PULSEBOX_API_KEY || "test_pulsebox_secret_key_123";
+
 // Minimal DOM Element emulation for Node.js test environment
 class MockElement {
   constructor(tag = "div", attrs = {}) {

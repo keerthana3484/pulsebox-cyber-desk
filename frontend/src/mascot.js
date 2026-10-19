@@ -151,24 +151,64 @@ export class PulseBotAnimator {
     }, 900);
   }
 
-  // Full-Screen Standby Mode (Sleeping PulseBot face)
+  // Full-Screen Standby Mode (Sleeping PulseBot face with 450ms Double-Tap Wake)
   static renderStandbyScreen(container, onWake) {
     container.innerHTML = `
-      <div class="fullscreen-anim-screen standby-anim" title="Click anywhere to wake up">
+      <div class="fullscreen-anim-screen standby-anim" title="Double-tap within 450ms or click Power to wake">
         <div class="anim-face-box standby-pulse">
           ${PulseBotAnimator.getFaceSvg("sleepy", "#FF6D00")}
         </div>
         <div class="standby-z-particles">z  Z  Z</div>
         <div class="anim-text-box">
           <div class="anim-primary-text standby-label">PULSE-BOT STANDBY</div>
-          <div class="anim-hint-text">TAP SCREEN OR POWER TO WAKE</div>
+          <div class="anim-hint-text" id="standby-wake-hint">DOUBLE-TAP SCREEN TO WAKE</div>
         </div>
       </div>
     `;
 
-    container.querySelector(".standby-anim")?.addEventListener("click", () => {
+    const el = container.querySelector(".standby-anim");
+    const hintEl = container.querySelector("#standby-wake-hint");
+    let tapCount = 0;
+    let lastTapTime = 0;
+    let expireTimer = null;
+
+    const triggerWake = () => {
+      if (expireTimer) clearTimeout(expireTimer);
+      tapCount = 0;
       if (typeof onWake === "function") onWake();
-    });
+    };
+
+    if (el) {
+      el.addEventListener("click", () => {
+        const now = Date.now();
+        const delta = now - lastTapTime;
+
+        if (tapCount === 1 && delta >= 50 && delta <= 450) {
+          triggerWake();
+          return;
+        }
+
+        tapCount = 1;
+        lastTapTime = now;
+        if (hintEl) {
+          hintEl.textContent = "TAP ONCE MORE TO WAKE (450ms)";
+          hintEl.classList.add("tap-confirm-pulse");
+        }
+
+        if (expireTimer) clearTimeout(expireTimer);
+        expireTimer = setTimeout(() => {
+          tapCount = 0;
+          if (hintEl) {
+            hintEl.textContent = "DOUBLE-TAP SCREEN TO WAKE";
+            hintEl.classList.remove("tap-confirm-pulse");
+          }
+        }, 450);
+      });
+
+      el.addEventListener("dblclick", () => {
+        triggerWake();
+      });
+    }
   }
 
   // Full-Screen Wake-Up Animation

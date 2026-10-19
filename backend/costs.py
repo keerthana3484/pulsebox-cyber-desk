@@ -189,6 +189,7 @@ class CostManager:
     """
 
     DEFAULT_BUDGET: float = 2500.00
+    MAX_BUDGET: float = 1_000_000.00  # Maximum allowable monthly budget ($1,000,000.00)
 
     def __init__(self, provider: Optional[BaseBillingProvider] = None) -> None:
         self.provider: BaseBillingProvider = provider or SimulatedBillingProvider()
@@ -211,7 +212,7 @@ class CostManager:
     def update_budget(self, new_budget: Any) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
         """
         Validates and updates the monthly budget.
-        Rejects non-numeric, negative, zero, NaN, and Infinite values.
+        Rejects non-numeric, negative, zero, NaN, Infinite, and excessively large values.
         Returns: (success: bool, message: str, updated_settings_dict)
         """
         if new_budget is None:
@@ -231,6 +232,9 @@ class CostManager:
 
         if val <= 0:
             return False, "Budget must be a positive numeric amount greater than zero", None
+
+        if val > self.MAX_BUDGET:
+            return False, f"Budget exceeds maximum allowable amount (${self.MAX_BUDGET:,.2f})", None
 
         # Accept valid budget (rounded to 2 decimal places)
         self.monthly_budget = round(val, 2)

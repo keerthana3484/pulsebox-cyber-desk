@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=320, height=240, initial-scale=1.0">
+  <title>PulseBox State Animation Capture Fixture</title>
+  <link rel="stylesheet" href="/src/style.css">
+  <link rel="stylesheet" href="/src/simulatorStyle.css">
+  <link rel="stylesheet" href="/src/voxelComponents.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 320px;
+      height: 240px;
+      overflow: hidden;
+      background: #05070D;
+      color: #E2E8F0;
+      font-family: 'Silkscreen', 'Press Start 2P', monospace;
+      image-rendering: pixelated;
+    }
+    #lcd-container {
+      width: 320px;
+      height: 240px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .status-bar-capture {
+      height: 16px;
+      background: #0B111E;
+      border-bottom: 1px solid #162035;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 6px;
+      font-size: 8px;
+      color: #94A3B8;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .viewport-capture {
+      height: 192px;
+      width: 320px;
+      overflow: hidden;
+      position: relative;
+      background: #07090E;
+      flex-shrink: 0;
+    }
+    .hotbar-capture {
+      height: 32px;
+      width: 320px;
+      background: #000;
+      border-top: 1px solid #162035;
+      display: flex;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    /* Stepped block wipe frame overlay */
+    .wipe-underlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 320px;
+      height: 192px;
+      z-index: 1;
+    }
+    .wipe-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 320px;
+      height: 192px;
+      z-index: 2;
+    }
+    .levelup-banner-overlay {
+      position: absolute;
+      top: 18px;
+      left: 12px;
+      right: 12px;
+      background: #00E676;
+      color: #05070D;
+      border: 2px solid #FFFFFF;
+      box-shadow: 0 0 14px rgba(0, 230, 118, 0.8), inset 2px 2px 0 #69F0AE;
+      padding: 6px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+  <div id="lcd-container">
+    <div class="status-bar-capture" id="cap-status-bar">
+      <span style="color: #00E676;">[SIM] 📶 5G</span>
+      <span id="cap-title" style="font-weight: 700; color: #00E5FF;">SYSTEM STATUS</span>
+      <span id="cap-clock">12:00</span>
+    </div>
+    <div class="viewport-capture" id="cap-viewport"></div>
+    <div class="hotbar-capture" id="cap-hotbar"></div>
+  </div>
+
+  <script type="module">
+    import { renderHomeScreen } from "./src/screens/home.js";
+    import { renderServersScreen } from "./src/screens/servers.js";
+    import { renderIncidentsScreen } from "./src/screens/incidents.js";
+    import { renderFocusTimerScreen } from "./src/screens/focusTimer.js";
+    import { PulseBotAnimator } from "./src/mascot.js";
+    import { buildHotbarNavigation, getPulseBotMascotSvg } from "./src/voxelComponents.js";
+    import { createMockState } from "./src/mockData.js";
+
+    const params = new URLSearchParams(window.location.search);
+    const anim = params.get("anim") || "idle_animation_6fps";
+    const frame = parseInt(params.get("frame") || "0", 10);
+
+    const viewport = document.getElementById("cap-viewport");
+    const titleEl = document.getElementById("cap-title");
+    const hotbarMount = document.getElementById("cap-hotbar");
+    const statusBar = document.getElementById("cap-status-bar");
+
+    const mockActions = {
+      api: {
+        getHealth: async () => ({ status: "healthy" }),
+        getState: async () => ({ overall_health: "NOMINAL", failed_server_count: 0 }),
+        getIncidents: async () => [],
+        restoreServer: async () => ({ status: "success" }),
+        simulateFailure: async () => ({ status: "success" }),
+      },
+      onStateChange: () => () => {},
+      playClick: () => {},
+      playBeep: () => {},
+      playSuccess: () => {},
+      playAlert: () => {},
+      playLevelUp: () => {},
+      playRecoveryChime: () => {},
+      playGentleAlert: () => {},
+      logSerial: () => {},
+      refreshBackendState: async () => {},
+    };
+
+    // -------------------------------------------------------------------------
+    // ANIMATION 1: SCREEN TRANSITION (8-step block wipe from Home to Servers)
+    // -------------------------------------------------------------------------
+    if (anim === "screen_transition") {
+      hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: frame >= 5 ? 1 : 0 });
+      titleEl.textContent = frame >= 5 ? "CLUSTER NODES" : "SYSTEM STATUS";
+
+      const state1 = createMockState();
+      state1.backendConnected = true;
+
+      if (frame === 0) {
+        renderHomeScreen(viewport, state1, mockActions);
+      } else if (frame >= 9) {
+        renderServersScreen(viewport, state1, mockActions);
+      } else {
+        // Chunky 8-step block wipe: reveal servers screen under wiping home screen
+        viewport.innerHTML = `
+          <div class="wipe-underlay" id="underlay-view"></div>
+          <div class="wipe-overlay" id="overlay-view"></div>
+        `;
+        const underlay = viewport.querySelector("#underlay-view");
+        const overlay = viewport.querySelector("#overlay-view");
+        renderServersScreen(underlay, state1, mockActions);
+        renderHomeScreen(overlay, state1, mockActions);
+
+        // Wipe percentage in 8 discrete 40px block chunks (320px / 8 = 40px)
+        const chunkPx = frame * 40;
+        overlay.style.clipPath = `inset(0 0 0 ${chunkPx}px)`;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // ANIMATION 2: INCIDENT TRIGGER (Healthy -> Failure -> Worried Mascot + Alert)
+    // -------------------------------------------------------------------------
+    else if (anim === "incident_trigger") {
+      const state = createMockState();
+      state.backendConnected = true;
+
+      if (frame === 0) {
+        // Healthy nominal
+        titleEl.textContent = "SYSTEM STATUS";
+        hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 0 });
+        state.system.overallHealth = "NOMINAL";
+        state.system.failedServerCount = 0;
+        state.mascotMood = "happy";
+        renderHomeScreen(viewport, state, mockActions);
+      } else if (frame === 1) {
+        // Failure hits: 1 node down, banner alert
+        titleEl.textContent = "SYSTEM STATUS";
+        hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 0 });
+        state.system.overallHealth = "DEGRADED";
+        state.system.failedServerCount = 1;
+        state.servers[0].status = "failed";
+        state.mascotMood = "worried";
+        renderHomeScreen(viewport, state, mockActions);
+        const banner = document.createElement("div");
+        banner.className = "levelup-banner-overlay";
+        banner.style.background = "#FF1744";
+        banner.style.color = "#FFFFFF";
+        banner.style.boxShadow = "0 0 14px rgba(255, 23, 68, 0.9)";
+        banner.textContent = "⚠ INCIDENT DETECTED: API GATEWAY OFFLINE";
+        viewport.appendChild(banner);
+      } else if (frame === 2) {
+        // Worried mascot on cluster screen
+        titleEl.textContent = "CLUSTER NODES";
+        hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 1 });
+        state.system.overallHealth = "DEGRADED";
+        state.system.failedServerCount = 1;
+        state.servers[0].status = "failed";
+        state.mascotMood = "worried";
+        renderServersScreen(viewport, state, mockActions);
+      } else if (frame === 3) {
+        // Incident log screen with active alert
+        titleEl.textContent = "INCIDENT LOG";
+        hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 2 });
+        state.mascotMood = "worried";
+        mockActions.api.getIncidents = async () => [{
+          id: "INC-001",
+          server_id: "srv-api",
+          server_name: "API Gateway",
+          severity: "CRITICAL",
+          status: "OPEN",
+          consecutive_failure_count: 3,
+          created_at: new Date().toISOString(),
+        }];
+        renderIncidentsScreen(viewport, state, mockActions);
+      } else {
+        // 2 nodes down, critical health drop
+        titleEl.textContent = "CLUSTER NODES";
+        hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 1 });
+        state.system.overallHealth = "DEGRADED";
+        state.system.failedServerCount = 2;
+        state.servers[0].status = "failed";
+        state.servers[1].status = "failed";
+        state.mascotMood = "worried";
+        renderServersScreen(viewport, state, mockActions);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // ANIMATION 3: RECOVERY TRIGGER (Outage -> Recovery Chime -> Celebrating Mascot)
+    // -------------------------------------------------------------------------
+    else if (anim === "recovery_trigger") {
+      const state = createMockState();
+      state.backendConnected = true;
+
+      if (frame === 0) {
+        // Incident state with worried mascot
+        titleEl.textContent = "CLUSTER NODES";
+        hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 1 });
+        state.system.overallHealth = "DEGRADED";
+        state.system.failedServerCount = 1;
+        state.servers[0].status = "failed";
+        state.mascotMood = "worried";
+        renderServersScreen(viewport, state, mockActions);
+      } else if (frame === 1) {
+        // Restoring in progress
+        titleEl.textContent = "CLUSTER NODES";
+        hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 1 });
+        state.servers[0].status = "recovering";
+        state.mascotMood = "idle";
+        renderServersScreen(viewport, state, mockActions);
+        const banner = document.createElement("div");
+        banner.className = "levelup-banner-overlay";
+        banner.style.background = "#FFB300";
+        banner.style.color = "#05070D";
+        banner.textContent = "⚙ RESTORING SUB-SYSTEMS...";
+        viewport.appendChild(banner);
+      } else if (frame === 2 || frame === 3) {
+        // Recovered! Celebrating mascot with party hat, star eyes & chime
+        titleEl.textContent = "SYSTEM STATUS";
+        hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 0 });
+        state.system.overallHealth = "NOMINAL";
+        state.system.failedServerCount = 0;
+        state.servers.forEach(s => s.status = "online");
+        state.mascotMood = "celebrating";
+        renderHomeScreen(viewport, state, mockActions);
+        const banner = document.createElement("div");
+        banner.className = "levelup-banner-overlay";
+        banner.style.background = "#00E676";
+        banner.style.color = "#05070D";
+        banner.textContent = "✦ RECOVERY CONFIRMED: 6/6 NODES ONLINE ✦";
+        viewport.appendChild(banner);
+      } else {
+        // Steady nominal home state
+        titleEl.textContent = "SYSTEM STATUS";
+        hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 0 });
+        state.system.overallHealth = "NOMINAL";
+        state.system.failedServerCount = 0;
+        state.mascotMood = "celebrating";
+        renderHomeScreen(viewport, state, mockActions);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // ANIMATION 4: FOCUS SESSION LEVEL-UP (00:01 -> 00:00 -> Level-Up Fanfare)
+    // -------------------------------------------------------------------------
+    else if (anim === "focus_session_levelup") {
+      titleEl.textContent = "FOCUS TIMER";
+      hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 6 });
+      const state = createMockState();
+
+      if (frame === 0) {
+        renderFocusTimerScreen(viewport, state, mockActions);
+        const timeVal = viewport.querySelector(".timer-clock-digits");
+        if (timeVal) timeVal.textContent = "00:02";
+      } else if (frame === 1) {
+        renderFocusTimerScreen(viewport, state, mockActions);
+        const timeVal = viewport.querySelector(".timer-clock-digits");
+        if (timeVal) timeVal.textContent = "00:01";
+      } else if (frame === 2) {
+        // Trigger 00:00 level up
+        state.companion.pomodoro.sessionsCompleted = 4;
+        renderFocusTimerScreen(viewport, state, mockActions);
+        const timeVal = viewport.querySelector(".timer-clock-digits");
+        if (timeVal) {
+          timeVal.textContent = "00:00";
+          timeVal.style.color = "#FFEB3B";
+        }
+        const banner = document.createElement("div");
+        banner.className = "levelup-banner-overlay";
+        banner.innerHTML = "★ LEVEL UP! FOCUS SESSION COMPLETE ★";
+        viewport.appendChild(banner);
+      } else {
+        // Level up completed state
+        state.companion.pomodoro.sessionsCompleted = 4;
+        renderFocusTimerScreen(viewport, state, mockActions);
+        const banner = document.createElement("div");
+        banner.className = "levelup-banner-overlay";
+        banner.style.background = "#FFB300";
+        banner.innerHTML = "SESSION +1 EARNED (4 TOTAL)";
+        viewport.appendChild(banner);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // ANIMATION 5: IDLE ANIMATION AT 6 FPS (Antenna Beacon Pulse + Eye Blink)
+    // -------------------------------------------------------------------------
+    else if (anim === "idle_animation_6fps") {
+      titleEl.textContent = "SYSTEM STATUS";
+      hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 0 });
+      const state = createMockState();
+      state.backendConnected = true;
+      renderHomeScreen(viewport, state, mockActions);
+
+      const opacities = ["0.45", "0.65", "0.85", "1.00", "0.85", "0.60"];
+      const beacon = viewport.querySelector(".pulse-beacon");
+      if (beacon) {
+        beacon.setAttribute("opacity", opacities[frame % opacities.length]);
+      }
+
+      // Blink eyes on frames 4 and 5
+      const eyeGroup = viewport.querySelector(".mascot-eyes");
+      if (eyeGroup && (frame === 4 || frame === 5)) {
+        eyeGroup.innerHTML = `
+          <rect x="7" y="11" width="5" height="1" fill="#00E676" />
+          <rect x="16" y="11" width="5" height="1" fill="#00E676" />
+        `;
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // ANIMATION 6: DOUBLE-TAP WAKE (Sleeping -> Tap 1 -> Tap 2 -> Wake -> Restored)
+    // -------------------------------------------------------------------------
+    else if (anim === "double_tap_wake") {
+      statusBar.style.display = frame >= 4 ? "flex" : "none";
+      hotbarMount.style.display = frame >= 4 ? "flex" : "none";
+
+      if (frame === 0) {
+        // Sleeping standby
+        PulseBotAnimator.renderStandbyScreen(viewport, () => {});
+      } else if (frame === 1) {
+        // First tap: feedback prompt
+        PulseBotAnimator.renderStandbyScreen(viewport, () => {});
+        const hint = viewport.querySelector("#standby-wake-hint");
+        if (hint) {
+          hint.textContent = "TAP ONCE MORE TO WAKE (450ms)";
+          hint.classList.add("tap-confirm-pulse");
+        }
+        // Simulated touch ripple
+        const rip = document.createElement("div");
+        rip.className = "sim-touch-ripple";
+        rip.style.left = "160px";
+        rip.style.top = "120px";
+        viewport.appendChild(rip);
+      } else if (frame === 2) {
+        // Second tap registered
+        PulseBotAnimator.renderStandbyScreen(viewport, () => {});
+        const hint = viewport.querySelector("#standby-wake-hint");
+        if (hint) {
+          hint.textContent = "WAKING DISPLAY...";
+          hint.style.color = "#00E676";
+        }
+        const rip = document.createElement("div");
+        rip.className = "sim-touch-ripple";
+        rip.style.left = "165px";
+        rip.style.top = "125px";
+        viewport.appendChild(rip);
+      } else if (frame === 3) {
+        // Wake animation
+        viewport.innerHTML = `
+          <div class="fullscreen-anim-screen wake-anim" style="width: 320px; height: 192px;">
+            <div class="anim-face-box">
+              <div id="anim-face-slot">${PulseBotAnimator.getFaceSvg("happy", "#00E676")}</div>
+            </div>
+            <div class="anim-text-box">
+              <div class="anim-primary-text" style="color: #00E676;">PULSE-BOT</div>
+              <div class="anim-sub-text" style="color: #69F0AE;">WAKING CORE...</div>
+            </div>
+          </div>
+        `;
+      } else {
+        // Restored Home screen
+        const state = createMockState();
+        state.backendConnected = true;
+        titleEl.textContent = "SYSTEM STATUS";
+        hotbarMount.innerHTML = buildHotbarNavigation({ activeIndex: 0 });
+        renderHomeScreen(viewport, state, mockActions);
+      }
+    }
+  </script>
+</body>
+</html>

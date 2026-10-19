@@ -6,6 +6,32 @@
 const API_BASE = "http://127.0.0.1:5000";
 const REQUEST_TIMEOUT_MS = 2500;
 
+/**
+ * Resolves request headers. In trusted Node.js environments (automated integration tests
+ * and CLI tools), attaches Authorization Bearer token from process.env.
+ * Never retrieves, stores, or attaches API keys in browser JavaScript runtimes.
+ */
+function getAuthHeaders(customHeaders = {}) {
+  const headers = { "Content-Type": "application/json", ...customHeaders };
+  // Only applicable in trusted Node.js CLI / test runner environments
+  if (typeof process !== "undefined" && process?.versions?.node) {
+    const nodeEnv = process["env"];
+    const key = nodeEnv ? nodeEnv["PULSEBOX_API_KEY"] : null;
+    if (key && !headers["Authorization"]) {
+      headers["Authorization"] = `Bearer ${key}`;
+    }
+  }
+  return headers;
+}
+
+/**
+ * Detects whether execution is occurring in browser JavaScript where secrets
+ * must not be exposed or stored.
+ */
+export function isBrowserEnvironment() {
+  return typeof window !== "undefined" && !(typeof process !== "undefined" && process?.versions?.node);
+}
+
 async function fetchWithTimeout(url, options = {}) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -51,9 +77,12 @@ export async function getState() {
  * Simulates a server failure on a specific node or auto-selects the first online node.
  */
 export async function simulateFailure(serverId = null) {
+  if (isBrowserEnvironment()) {
+    throw new Error("Authorization required: State mutations are disabled in browser JavaScript. A secure session or backend proxy is required.");
+  }
   const options = {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
   };
   if (serverId) {
     options.body = JSON.stringify({ server_id: serverId });
@@ -73,9 +102,12 @@ export async function simulateFailure(serverId = null) {
  * If serverId is provided, restores that specific server. If null, restores all 6 servers.
  */
 export async function restoreServer(serverId = null) {
+  if (isBrowserEnvironment()) {
+    throw new Error("Authorization required: State mutations are disabled in browser JavaScript. A secure session or backend proxy is required.");
+  }
   const options = {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
   };
   if (serverId) {
     options.body = JSON.stringify({ server_id: serverId });
@@ -134,9 +166,12 @@ export async function getCostSettings() {
  * @param {number|string} monthlyBudget - New positive numeric budget
  */
 export async function updateCostBudget(monthlyBudget) {
+  if (isBrowserEnvironment()) {
+    throw new Error("Authorization required: State mutations are disabled in browser JavaScript. A secure session or backend proxy is required.");
+  }
   const res = await fetchWithTimeout(`${API_BASE}/costs/settings`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ monthly_budget: monthlyBudget }),
   });
   const data = await res.json().catch(() => ({}));
@@ -164,9 +199,12 @@ export async function getWeather() {
  * and resets weather provider.
  */
 export async function resetBackend() {
+  if (isBrowserEnvironment()) {
+    throw new Error("Authorization required: State mutations are disabled in browser JavaScript. A secure session or backend proxy is required.");
+  }
   const res = await fetchWithTimeout(`${API_BASE}/reset`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify({}),
   });
   const data = await res.json().catch(() => ({}));
@@ -184,9 +222,12 @@ export async function resetBackend() {
  * @param {"failed"|"online"} [status="failed"] - Health check outcome
  */
 export async function recordHealthCheck(serverId, status = "failed") {
+  if (isBrowserEnvironment()) {
+    throw new Error("Authorization required: State mutations are disabled in browser JavaScript. A secure session or backend proxy is required.");
+  }
   const res = await fetchWithTimeout(`${API_BASE}/record-health-check`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: getAuthHeaders(),
     body: JSON.stringify({ server_id: serverId, status }),
   });
   const data = await res.json().catch(() => ({}));

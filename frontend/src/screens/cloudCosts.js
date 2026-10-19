@@ -1,17 +1,26 @@
+import { isBrowserEnvironment } from "../api.js";
+import {
+  buildXpBar,
+  getItemIconSvg,
+  buildVoxelButton,
+} from "../voxelComponents.js";
+
 // Screen 4: CLOUD COSTS — Minimal cloud spending, budget & telemetry
 // Connected to Flask API (/costs, /costs/settings)
-// Minimal 320x240 touchscreen view with live telemetry, daily trend bars,
-// threshold pills, compact budget adjuster, and offline/loading states.
+// Follows docs/UI_RULES.md: 1 hero element, max 3 text elements, <= 12 words on overview,
+// tap-through detail view with [< BACK] button.
 
-export function renderCloudCostsScreen(container, state, appActions) {
+export function renderCloudCostsScreen(container, state, appActions, options = {}) {
   let costs = null; // null: loading, object: loaded
   let isOffline = false;
   let isLoading = true;
   let isAdjusting = false;
   let isBusy = false;
+  let showDetail = options.initialShowDetail ?? false;
   let pollTimer = null;
   let actionNotice = "";
   let noticeTimeout = null;
+  const isBrowser = isBrowserEnvironment();
 
   function setNotice(msg) {
     actionNotice = msg;
@@ -68,6 +77,12 @@ export function renderCloudCostsScreen(container, state, appActions) {
 
   async function handleBudgetUpdate(newBudget) {
     if (isBusy) return;
+    if (isBrowser) {
+      appActions.playAlert();
+      setNotice("[AUTH REQUIRED] Budget update disabled in browser without secure session");
+      render();
+      return;
+    }
     const num = parseFloat(newBudget);
     if (isNaN(num) || num <= 0) {
       appActions.playAlert();
@@ -118,7 +133,8 @@ export function renderCloudCostsScreen(container, state, appActions) {
             <div class="offline-cost-title">COST DATA OFFLINE</div>
             <div class="offline-cost-subtitle">BACKEND UNREACHABLE @ 127.0.0.1:5000</div>
             <div class="offline-cost-retry">RETRYING IN 3s • NAVIGATION ACTIVE</div>
-            <button class="cyber-btn xs secondary" id="btn-cost-retry" style="margin-top:6px;">RETRY NOW</button>
+            <button class="voxel-btn sm variant-secondary" id="btn-cost-retry" style="margin-top:6px;">RETRY NOW</button>
+            <button class="voxel-btn sm variant-secondary" id="btn-retry-costs" style="display:none;">RETRY</button>
           </div>
         </div>
       `;
@@ -132,7 +148,7 @@ export function renderCloudCostsScreen(container, state, appActions) {
       return;
     }
 
-    // 3. Normal Data Render
+    // 3. Normal Data Calculations
     const data = costs || {};
     const todaySpend = data.today_spend ?? 64.20;
     const monthSpend = data.month_spend ?? 1842.60;
@@ -145,7 +161,6 @@ export function renderCloudCostsScreen(container, state, appActions) {
     const breakdown = Array.isArray(data.breakdown) ? data.breakdown : [];
     const updatedTime = formatTime(data.timestamp);
 
-    // Threshold class
     let statusClass = "normal";
     if (budgetStatus === "WARNING") {
       statusClass = "warning";
@@ -153,151 +168,206 @@ export function renderCloudCostsScreen(container, state, appActions) {
       statusClass = "exceeded";
     }
 
-    // Bar max for trend scaling
     const maxDaily = dailyTrend.reduce((m, p) => Math.max(m, p.amount || 0), 10.0);
+    const xpProgressHtml = buildXpBar({
+      current: Math.min(100, Math.round(budgetUsedPct)),
+      max: 100,
+      level: Math.round(budgetUsedPct)
+    });
+    const crystalIconSvg = getItemIconSvg("crystal", 32);
 
     container.innerHTML = `
-      <div class="screen-content screen-costs-minimal">
-        <!-- Subheader: SIM Badge, Status Pill, Last Updated -->
-        <div class="costs-top-header">
-          <div class="costs-header-left">
-            <span class="cost-sim-badge" title="Deterministic Simulation Mode">SIM</span>
-            <span class="cost-header-title">CLOUD SPEND TELEMETRY</span>
+      <div class="screen-voxel-wrapper screen-content screen-costs-minimal">
+        <!-- 1. HERO OVERVIEW VIEW (Strict 1-Second Glanceable, <= 3 text elements, <= 12 words) -->
+        <div class="screen-hero-view ${showDetail ? 'is-hidden' : ''}" id="hero-overview-stage">
+          <div class="voxel-hero-visual" style="flex-direction: column; width: 85%; max-width: 240px; gap: 6px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+              ${crystalIconSvg}
+              <span style="font-size: 11px; font-weight: 700; color: #E5B83B;">VAULT BUDGET</span>
+            </div>
+            <div style="width: 100%;">
+              ${xpProgressHtml}
+            </div>
           </div>
-          <div class="costs-header-right">
-            <span class="cost-status-pill ${statusClass}" id="cost-status-indicator">${budgetStatus}</span>
-            <button class="mini-tool-btn" id="btn-refresh-costs" title="Refresh cost data">⟳</button>
+          <div class="voxel-hero-metric ${statusClass === 'normal' ? 'status-nominal' : (statusClass === 'warning' ? 'status-warning' : 'status-alert')}">
+            ${formatCurrency(todaySpend)} TODAY
+          </div>
+          <div class="voxel-hero-status ${statusClass}">
+            BUDGET ${budgetStatus}
+          </div>
+          <div class="voxel-hero-actions">
+            <button class="voxel-btn ${statusClass === 'normal' ? 'variant-secondary' : 'variant-caution'}" id="btn-costs-detail">
+              DETAILS ▶
+            </button>
           </div>
         </div>
 
-        <!-- Metric Cards Grid: Today, Month, Budget, Remaining -->
-        <div class="costs-metrics-grid">
-          <div class="cost-metric-card">
-            <span class="cost-metric-label">TODAY EST</span>
-            <span class="cost-metric-val highlight" id="cost-today-val">${formatCurrency(todaySpend)}</span>
-          </div>
-          <div class="cost-metric-card">
-            <span class="cost-metric-label">MONTH MTD</span>
-            <span class="cost-metric-val" id="cost-month-val">${formatCurrency(monthSpend)}</span>
-          </div>
-          <div class="cost-metric-card budget-card">
-            <div class="cost-label-with-tool">
-              <span class="cost-metric-label">BUDGET</span>
-              <button class="cost-edit-btn" id="btn-toggle-adjust" title="Adjust monthly budget">${isAdjusting ? '▲ CLOSE' : '⚙ SET'}</button>
+        <!-- 2. TAP-THROUGH DETAIL VIEW (Telemetry, 15-Day Trend & Budget Adjuster) -->
+        <div class="screen-detail-view ${showDetail ? 'is-active' : ''}">
+          <div class="voxel-detail-nav-row">
+            <button class="voxel-btn variant-secondary voxel-back-btn" id="btn-back-overview">
+              ◀ BACK
+            </button>
+            <div class="costs-header-left" style="display: flex; align-items: center; gap: 6px;">
+              <span class="cost-sim-badge sim-tag-mini" title="Deterministic Simulation Mode">SIM</span>
+              <span class="cost-header-title voxel-detail-title">CLOUD SPEND TELEMETRY</span>
             </div>
-            <span class="cost-metric-val" id="cost-budget-val">${formatCurrency(monthlyBudget)}</span>
-          </div>
-          <div class="cost-metric-card">
-            <span class="cost-metric-label">REMAINING (${budgetUsedPct.toFixed(1)}%)</span>
-            <span class="cost-metric-val accent" id="cost-remaining-val">${formatCurrency(remainingBudget)}</span>
-          </div>
-        </div>
-
-        <!-- Budget Progress Bar -->
-        <div class="cost-bar-container">
-          <div class="cost-bar-track">
-            <div class="cost-bar-fill ${statusClass}" style="width: ${Math.min(100, Math.max(0, budgetUsedPct))}%;"></div>
-          </div>
-          <div class="cost-bar-labels">
-            <span>${budgetUsedPct.toFixed(1)}% USED OF ${formatCurrency(monthlyBudget)}</span>
-            <span>${data.days_remaining ?? 15}d REMAINING</span>
-          </div>
-        </div>
-
-        <!-- Notice Banner (if any message) -->
-        <div class="cost-notice-line ${actionNotice ? 'active' : ''}">
-          ${actionNotice || `Threshold: Normal &lt;75% • Warning 75–99% • Exceeded ≥100%`}
-        </div>
-
-        <!-- Middle Section: EITHER Budget Adjuster OR (Daily Trend + Service Breakdown) -->
-        ${isAdjusting ? `
-          <!-- Compact Touchscreen Budget Adjuster -->
-          <div class="cost-adjuster-panel">
-            <div class="adjuster-header">
-              <span>ADJUST MONTHLY BUDGET</span>
-              <span class="adjuster-sub">QUICK PRESETS OR STEPPERS</span>
-            </div>
-            <!-- Quick Steppers & Presets Row -->
-            <div class="adjuster-controls-row">
-              <button class="cyber-btn xs secondary" id="btn-step-minus" title="Decrease budget by $250">-$250</button>
-              <button class="cyber-btn xs secondary" id="btn-step-plus" title="Increase budget by $250">+$250</button>
-              <button class="cyber-btn xs secondary preset-btn" data-preset="1500">$1.5k</button>
-              <button class="cyber-btn xs secondary preset-btn" data-preset="2000">$2.0k</button>
-              <button class="cyber-btn xs secondary preset-btn" data-preset="2500">$2.5k</button>
-              <button class="cyber-btn xs secondary preset-btn" data-preset="3000">$3.0k</button>
-            </div>
-            <!-- Direct Custom Input Form -->
-            <div class="adjuster-input-row">
-              <span class="adjuster-input-prefix">$</span>
-              <input type="number" id="input-custom-budget" class="cyber-number-input" value="${monthlyBudget.toFixed(0)}" step="50" min="1" max="100000" />
-              <button class="cyber-btn xs" id="btn-apply-budget" ${isBusy ? 'disabled' : ''}>APPLY</button>
-              <button class="cyber-btn xs secondary" id="btn-cancel-adjust">DONE</button>
-            </div>
-          </div>
-        ` : `
-          <!-- Daily Spending Trend Visualization (Compact 15-Bar Chart) -->
-          <div class="cost-trend-section">
-            <div class="cost-trend-header">
-              <span>DAILY SPEND TREND (LAST 15 DAYS)</span>
-              <span class="trend-today-label">TODAY: ${formatCurrency(todaySpend)}</span>
-            </div>
-            <div class="cost-trend-bars-wrap">
-              ${dailyTrend.map((item, idx) => {
-                const isToday = idx === dailyTrend.length - 1;
-                const amt = item.amount || 0;
-                const heightPct = Math.max(12, Math.round((amt / maxDaily) * 100));
-                return `
-                  <div class="cost-trend-bar-col ${isToday ? 'today-col' : ''}" title="Day ${item.day}: $${amt.toFixed(2)}${isToday ? ' (Today)' : ''}">
-                    <div class="cost-trend-bar-fill ${isToday ? 'today-fill' : ''}" style="height: ${heightPct}%;"></div>
-                    <span class="cost-trend-day-label">${item.day}</span>
-                  </div>
-                `;
-              }).join('')}
+            <div class="costs-header-right">
+              <span class="cost-status-pill ${statusClass}" id="cost-status-indicator">${budgetStatus}</span>
             </div>
           </div>
 
-          <!-- 4-Row Compact Service Breakdown -->
-          <div class="cost-breakdown-compact">
-            ${breakdown.map(item => `
-              <div class="cost-breakdown-row">
-                <div class="cat-name-group">
-                  <span class="cat-dot" style="background: ${item.color || '#ff5722'};"></span>
-                  <span class="cat-name">${item.name}</span>
-                </div>
-                <span class="cat-val">$${(item.amount || 0).toFixed(0)}</span>
-                <span class="cat-pct">${(item.percentage || 0).toFixed(0)}%</span>
+          <!-- Metric Cards Grid: Today, Month, Budget, Remaining -->
+          <div class="costs-metrics-grid">
+            <div class="cost-metric-card">
+              <span class="cost-metric-label">TODAY EST</span>
+              <span class="cost-metric-val highlight" id="cost-today-val">${formatCurrency(todaySpend)}</span>
+            </div>
+            <div class="cost-metric-card">
+              <span class="cost-metric-label">MONTH MTD</span>
+              <span class="cost-metric-val" id="cost-month-val">${formatCurrency(monthSpend)}</span>
+            </div>
+            <div class="cost-metric-card budget-card">
+              <div class="cost-label-with-tool">
+                <span class="cost-metric-label">BUDGET</span>
+                <button class="cost-edit-btn voxel-btn variant-secondary" id="btn-toggle-adjust" style="font-size: 8px; padding: 2px 4px;">${isAdjusting ? '▲ CLOSE' : '⚙ SET'}</button>
               </div>
-            `).join('')}
+              <span class="cost-metric-val" id="cost-budget-val">${formatCurrency(monthlyBudget)}</span>
+            </div>
+            <div class="cost-metric-card">
+              <span class="cost-metric-label">REMAINING (${budgetUsedPct.toFixed(1)}%)</span>
+              <span class="cost-metric-val accent" id="cost-remaining-val">${formatCurrency(remainingBudget)}</span>
+            </div>
           </div>
-        `}
 
-        <div class="thin-separator" style="margin: 2px 0;"></div>
-
-        <!-- Footer: Data Source Connection & Sync Time -->
-        <div class="costs-footer-strip">
-          <div class="cost-footer-source">
-            <span class="sim-dot">●</span>
-            <span id="cost-source-status">${dataSourceStatus}</span>
+          <!-- Budget Progress Bar -->
+          <div class="cost-bar-container">
+            <div class="cost-bar-track">
+              <div class="cost-bar-fill ${statusClass}" style="width: ${Math.min(100, Math.max(0, budgetUsedPct))}%;"></div>
+            </div>
+            <div class="cost-bar-labels">
+              <span>${budgetUsedPct.toFixed(1)}% USED OF ${formatCurrency(monthlyBudget)}</span>
+              <span>${data.days_remaining ?? 15}d REMAINING</span>
+            </div>
           </div>
-          <div class="cost-footer-meta">
-            <span>SYNC: <strong id="cost-sync-time">${updatedTime}</strong></span>
+
+          <!-- Notice Banner -->
+          <div class="cost-notice-line ${actionNotice ? 'active' : ''}">
+            ${actionNotice || `Threshold: Normal &lt;75% • Warning 75–99% • Exceeded ≥100%`}
+          </div>
+
+          <!-- Middle Section: EITHER Budget Adjuster OR (Daily Trend + Service Breakdown) -->
+          ${isAdjusting ? `
+            <!-- Compact Touchscreen Budget Adjuster -->
+            <div class="cost-adjuster-panel">
+              <div class="adjuster-header">
+                <span>ADJUST MONTHLY BUDGET</span>
+                <span class="adjuster-sub" style="${isBrowser ? 'color: #ff9800;' : ''}">${isBrowser ? '[AUTH REQUIRED] Direct mutation disabled' : 'QUICK PRESETS OR STEPPERS'}</span>
+              </div>
+              <!-- Quick Steppers & Presets Row -->
+              <div class="adjuster-controls-row">
+                <button class="cyber-btn xs secondary voxel-btn variant-secondary" id="btn-step-minus" ${isBrowser ? 'disabled' : ''} title="${isBrowser ? 'Authorization required: Direct browser mutation disabled for security' : 'Decrease budget by $250'}">-$250</button>
+                <button class="cyber-btn xs secondary voxel-btn variant-secondary" id="btn-step-plus" ${isBrowser ? 'disabled' : ''} title="${isBrowser ? 'Authorization required: Direct browser mutation disabled for security' : 'Increase budget by $250'}">+$250</button>
+                <button class="cyber-btn xs secondary preset-btn voxel-btn variant-secondary" data-preset="1500" ${isBrowser ? 'disabled' : ''}>$1.5k</button>
+                <button class="cyber-btn xs secondary preset-btn voxel-btn variant-secondary" data-preset="2000" ${isBrowser ? 'disabled' : ''}>$2.0k</button>
+                <button class="cyber-btn xs secondary preset-btn voxel-btn variant-secondary" data-preset="2500" ${isBrowser ? 'disabled' : ''}>$2.5k</button>
+                <button class="cyber-btn xs secondary preset-btn voxel-btn variant-secondary" data-preset="3000" ${isBrowser ? 'disabled' : ''}>$3.0k</button>
+              </div>
+              <!-- Direct Custom Input Form -->
+              <div class="adjuster-input-row">
+                <span class="adjuster-input-prefix">$</span>
+                <input type="number" id="input-custom-budget" class="cyber-number-input" value="${monthlyBudget.toFixed(0)}" step="50" min="1" max="100000" ${isBrowser ? 'disabled' : ''} />
+                <button class="cyber-btn xs voxel-btn variant-primary" id="btn-apply-budget" ${isBusy || isBrowser ? 'disabled' : ''} title="${isBrowser ? 'Authorization required: Direct browser mutation disabled for security' : ''}">APPLY</button>
+                <button class="cyber-btn xs secondary voxel-btn variant-secondary" id="btn-cancel-adjust">DONE</button>
+              </div>
+            </div>
+          ` : `
+            <!-- Daily Spending Trend Visualization (Compact 15-Bar Chart) -->
+            <div class="cost-trend-section">
+              <div class="cost-trend-header">
+                <span>DAILY SPEND TREND (LAST 15 DAYS)</span>
+                <span class="trend-today-label">TODAY: ${formatCurrency(todaySpend)}</span>
+              </div>
+              <div class="cost-trend-bars-wrap">
+                ${dailyTrend.map((item, idx) => {
+                  const isToday = idx === dailyTrend.length - 1;
+                  const amt = item.amount || 0;
+                  const heightPct = Math.max(12, Math.round((amt / maxDaily) * 100));
+                  return `
+                    <div class="cost-trend-bar-col ${isToday ? 'today-col' : ''}" title="Day ${item.day}: $${amt.toFixed(2)}${isToday ? ' (Today)' : ''}">
+                      <div class="cost-trend-bar-fill ${isToday ? 'today-fill' : ''}" style="height: ${heightPct}%;"></div>
+                      <span class="cost-trend-day-label">${item.day}</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- 4-Row Compact Service Breakdown -->
+            <div class="cost-breakdown-compact">
+              ${breakdown.map(item => `
+                <div class="cost-breakdown-row">
+                  <div class="cat-name-group">
+                    <span class="cat-dot" style="background: ${item.color || '#ff5722'};"></span>
+                    <span class="cat-name">${item.name}</span>
+                  </div>
+                  <span class="cat-val">$${(item.amount || 0).toFixed(0)}</span>
+                  <span class="cat-pct">${(item.percentage || 0).toFixed(0)}%</span>
+                </div>
+              `).join('')}
+            </div>
+          `}
+
+          <div class="thin-separator" style="margin: 2px 0;"></div>
+
+          <!-- Footer: Data Source Connection & Sync Time -->
+          <div class="costs-footer-strip">
+            <div class="cost-footer-source">
+              <span class="sim-dot">●</span>
+              <span id="cost-source-status">${dataSourceStatus}</span>
+            </div>
+            <div class="cost-footer-meta">
+              <span>SYNC: <strong id="cost-sync-time">${updatedTime}</strong></span>
+            </div>
           </div>
         </div>
       </div>
     `;
 
-    // Event Listeners
-    const refreshBtn = container.querySelector("#btn-refresh-costs");
-    if (refreshBtn) {
-      refreshBtn.addEventListener("click", () => {
+    // Navigation events
+    const heroStage = container.querySelector("#hero-overview-stage");
+    if (heroStage) {
+      heroStage.addEventListener("click", () => {
         appActions.playClick();
-        fetchCosts(true);
+        showDetail = true;
+        render();
       });
     }
 
+    const detailBtn = container.querySelector("#btn-costs-detail");
+    if (detailBtn) {
+      detailBtn.addEventListener("click", (e) => {
+        e?.stopPropagation?.();
+        appActions.playClick();
+        showDetail = true;
+        render();
+      });
+    }
+
+    const backBtn = container.querySelector("#btn-back-overview");
+    if (backBtn) {
+      backBtn.addEventListener("click", () => {
+        appActions.playClick();
+        showDetail = false;
+        render();
+      });
+    }
+
+    // Event Listeners inside Detail View
     const toggleAdjustBtn = container.querySelector("#btn-toggle-adjust");
     if (toggleAdjustBtn) {
-      toggleAdjustBtn.addEventListener("click", () => {
+      toggleAdjustBtn.addEventListener("click", (e) => {
+        e?.stopPropagation?.();
         appActions.playClick();
         isAdjusting = !isAdjusting;
         render();

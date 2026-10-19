@@ -6,6 +6,7 @@ import {
   playClickSound,
   playBeepSound,
   playSuccessChime,
+  playLevelUpSound,
   isSoundEnabled,
   setSoundEnabled
 } from "./audio.js";
@@ -417,9 +418,9 @@ export class FocusTimerService {
       this.state.durationMinutes = this.state.breakPresetMinutes;
       this.state.remainingSeconds = this.state.breakPresetMinutes * 60;
 
-      // Play Focus Complete Chime
+      // Play Level-Up Celebratory Synth Sound
       try {
-        playSuccessChime();
+        playLevelUpSound();
       } catch {}
     } else {
       this.state.sessionNumber += 1;
