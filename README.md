@@ -71,10 +71,11 @@ Sitting on your desk, PulseBox couples an **ESP32 microcontroller** and **2.8-in
 
 > [!NOTE]
 > **Hardware Status (Verified on Real Device):**
-> PulseBox has been physically assembled and verified on a 30-pin **ESP32-WROOM-32 DevKit** paired with a **2.8" ILI9341 SPI TFT (320×240) and XPT2046 resistive touchscreen**.
-> - **Display & Touch:** All 8 native screens display correctly on real glass, touch navigation across the hotbar and detail views is fully functional, and 16-color Day/Night palettes render with dirty-region partial redraws.
-> - **Current Telemetry:** The firmware (`firmware/src/main.cpp`) currently displays local mock/demo telemetry offline with zero network requests.
-> - **Planned Roadmap:** Wi-Fi client connectivity, HTTPS synchronization with the Flask backend, and long-run thermal/power stability remain planned milestones.
+> PulseBox has been physically assembled and verified on an **ESP32 DevKit** paired with a **2.8" ILI9341 SPI TFT (320×240) and XPT2046 resistive touchscreen**, powered via USB cable.
+> - **Display & Touch:** All 8 native screens display correctly on the physical LCD. Touch navigation across all 8 hotbar slots and behind-the-tap detail views works cleanly.
+> - **Display Quality:** No display flicker was observed; dirty-region partial redraws render smoothly.
+> - **Current Telemetry:** The firmware (`firmware/src/main.cpp`) is configured to display local mock/demo telemetry offline with zero network requests.
+> - **Planned Roadmap:** Wi-Fi client connectivity, HTTPS synchronization with the Flask backend, and long-run 24h+ thermal/power stability remain planned milestones.
 
 ### Key Capabilities
 - **Glanceable Telemetry:** Designed for comprehension in under 1 second from 3 feet away.
@@ -124,11 +125,11 @@ flowchart TD
         end
     end
 
-    subgraph Physical_Hardware ["Desk Hardware Fixture (Verified on Hardware)"]
+    subgraph Physical_Hardware ["Desk Hardware Fixture"]
         ESP32["ESP32 Microcontroller\nArduino Framework / C++"]
-        TFT_Display["2.8' ILI9341 SPI TFT LCD\nVerified on Real Glass"]
-        Touchscreen["XPT2046 Resistive Touchscreen\nVerified Touch Actuation"]
-        Firmware_TLS["WiFiClientSecure (Prepared / Planned)\nPinned ISRG Root X1 CA (ca_cert.h)"]
+        TFT_Display["2.8' ILI9341 SPI TFT LCD\nAll 8 Screens Verified on Glass"]
+        Touchscreen["XPT2046 Resistive Touchscreen\nHotbar & Detail Touch Verified"]
+        Firmware_TLS["WiFiClientSecure (Configured / Planned)\nPinned ISRG Root X1 CA (ca_cert.h)"]
     end
 
     subgraph External_Cloud ["Cloud & External Services"]
@@ -216,7 +217,7 @@ The project boasts comprehensive automated test coverage spanning Python unit/in
 | **Cloud Costs Module** | [tests/test_frontend_costs.js](tests/test_frontend_costs.js) | **32** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Weather & Clock Screen** | [tests/test_frontend_weather_clock.js](tests/test_frontend_weather_clock.js) | **33** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Incident Logging** | [tests/test_frontend_incidents.js](tests/test_frontend_incidents.js) | **27** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
-| **ESP32 Firmware Build** | [firmware/src/main.cpp](firmware/src/main.cpp) | **PlatformIO** (Verified on ESP32 + ILI9341) | ![Build Passing](https://img.shields.io/badge/PlatformIO-Verified-brightgreen) |
+| **ESP32 Firmware Build** | [firmware/src/main.cpp](firmware/src/main.cpp) | **PlatformIO** (Configured & Verified on Hardware) | ![Build Passing](https://img.shields.io/badge/PlatformIO-Verified-brightgreen) |
 | **TOTAL ASSERTIONS** | — | **748 checks** | **100% PASS** |
 
 ### Firmware Resource Footprint (ESP32)
@@ -233,7 +234,7 @@ PulseBox Cyber Desk was physically assembled and verified on bench hardware usin
 ### Physical Wiring Table
 | Display Pin # | Header Silkscreen | ESP32 GPIO Pin | Function / Description |
 |:---:|:---|:---|:---|
-| **1** | `VCC` | `5V` (or `VIN`) | Power supply (onboard 3.3V LDO regulator active) |
+| **1** | `VCC` | `5V` (or `VIN`) | Power supply (display onboard 3.3V LDO regulator active) |
 | **2** | `GND` | `GND` | Common ground reference (0V) |
 | **3** | `CS` | `GPIO 5` | Hardware VSPI Display Chip Select (active low) |
 | **4** | `RESET` / `RST` | `GPIO 4` | Hardware display reset line |
@@ -248,6 +249,9 @@ PulseBox Cyber Desk was physically assembled and verified on bench hardware usin
 | **13** | `T_DO` | `GPIO 19` | Touch MISO (shared with VSPI MISO) |
 | **14** | `T_IRQ` | `NC` | Touch interrupt (software polling used in firmware) |
 
+### Power Setup
+The physical device is powered via a standard USB cable connected to the ESP32 DevKit only, which provides power to both the ESP32 and the display module.
+
 ### PlatformIO Flashing Command
 To compile and flash the firmware directly to the connected ESP32 via USB:
 ```bash
@@ -260,17 +264,17 @@ To open the live serial diagnostics console at 115200 baud:
 pio device monitor -b 115200
 ```
 
-### Hardware Verification & Tuning Notes
-1. **Touch Digitizer SPI Calibration:** The XPT2046 touch controller clock is configured to 2.5 MHz (`-D SPI_TOUCH_FREQUENCY=2500000`) on dedicated chip select `TOUCH_CS=21` to ensure crisp, debounce-free touch readings without bus contention.
-2. **Color Order & Palette Fidelity:** Enforced `-D TFT_RGB_ORDER=1` in `platformio.ini` to guarantee the 16-color Day and Night palettes render accurately without color inversion on the physical ILI9341 panel.
-3. **Power Rail & J1 Jumper:** Powered `VCC` from the ESP32's 5V rail with display solder jumper J1 left OPEN, utilizing the display's onboard 3.3V regulator while connecting the backlight to 3.3V.
-4. **Flicker-Free Dirty-Region Redraws:** Verified that mascot blinking, status bar clock ticks, and countdown decrements redraw only dirty bounding boxes, eliminating whole-screen redraw flicker on real hardware.
+### Verified Hardware Notes & Build Findings
+1. **Physical Display & Touch:** All 8 screens display correctly on the physical 320×240 LCD. Touchscreen navigation works across all 8 hotbar slots and behind-the-tap detail views toggle cleanly.
+2. **Display Quality:** No display flicker was observed; dirty-region partial redraws render smoothly.
+3. **SPI & Color Configuration:** Configured in `firmware/platformio.ini` with `-D SPI_TOUCH_FREQUENCY=2500000`, `-D TOUCH_CS=21`, and `-D TFT_RGB_ORDER=1`.
+4. **Problems Hit and Fixes:** None. The firmware compiled, uploaded via PlatformIO, and ran on the physical fixture without hardware issues.
 
 ---
 
 ## 🗺️ Roadmap
 
-1. **[COMPLETED] Flash & Calibrate on Real Hardware:** Built and verified on physical ESP32-WROOM-32 + 2.8" ILI9341 SPI TFT hardware. Confirmed all 8 screens render correctly on real glass, XPT2046 touch navigation operates smoothly, and dirty-region redraws eliminate display flicker.
+1. **[COMPLETED] Flash & Bring-Up on Real Hardware:** Built and verified on physical ESP32-WROOM-32 + 2.8" ILI9341 SPI TFT hardware. Confirmed all 8 screens display correctly on the physical LCD, touch navigation operates across all 8 hotbar slots and detail views, and no display flicker was observed.
 2. **Wi-Fi Client with Pinned CA:** Implement a dedicated Wi-Fi client that connects to local WPA2/WPA3 networks and periodically executes `GET /state` over HTTPS, verifying server identity against the pinned ISRG Root X1 certificate in `ca_cert.h`.
 3. **Optional Scoped Device Token:** Support an optional device token (`PULSEBOX_DEVICE_KEY`) only if the physical fixture is configured to post telemetry (`POST /record-health-check`) back to the Flask backend; standard read-only polling remains unauthenticated by design.
 4. **Long-Run Thermal & Power Stability:** Conduct continuous 24-hour burn-in benchmarks to monitor thermal dissipation, memory stability, and power draw under extended operation.

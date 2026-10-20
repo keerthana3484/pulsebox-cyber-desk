@@ -27,7 +27,7 @@ The project strictly adheres to nine core security invariants:
    - The backend `PULSEBOX_API_KEY` is never accessible to browser JavaScript, never stored in `localStorage` or `sessionStorage`, and never injected into client-side environment variables bundled by Vite.
 2. **Role-Based Token Authentication (Admin vs Optional Scoped Device Token):**
    - Every endpoint that alters system state (`/simulate-failure`, `/restore`, `/reset`, `/costs/settings`) requires administrative credentials (`PULSEBOX_ADMIN_KEY` or `PULSEBOX_API_KEY`).
-   - The backend architecture is prepared for a separate, strictly scoped **Device Token** (`PULSEBOX_DEVICE_KEY`, optional/future). When enabled, a device token is permitted ONLY to submit telemetry (`/record-health-check`); any attempt to trigger administrative state changes with the device token is rejected with HTTP 403 Forbidden. Read-only endpoints (`/state`) require no token. (Note: The physical ESP32 firmware in `main.cpp` has been verified on real hardware running offline with local mock/demo data and makes no network requests).
+   - The backend architecture is prepared for a separate, strictly scoped **Device Token** (`PULSEBOX_DEVICE_KEY`, optional/future). When enabled, a device token is permitted ONLY to submit telemetry (`/record-health-check`); any attempt to trigger administrative state changes with the device token is rejected with HTTP 403 Forbidden. Read-only endpoints (`/state`) require no token. (Note: The firmware in `main.cpp` is configured to run offline with local mock/demo data and makes zero network requests; all 8 screens and touch navigation have been verified on physical hardware).
    - Token comparisons use constant-time verification (`secrets.compare_digest`) to prevent timing attacks.
 3. **Loopback-Only by Default (Explicit LAN Opt-In):**
    - The Flask backend binds strictly to `127.0.0.1` (localhost).
@@ -71,7 +71,8 @@ The project strictly adheres to nine core security invariants:
 | TRUST BOUNDARY 2: Local Wi-Fi / LAN (Planned Future Sync)   |           |
 |                                                             v           |
 |  [Physical ESP32 Desk Display] <==== Prepared Wi-Fi HTTPS ==+           |
-|   - Verified on Real Hardware (Offline Demo Data Today)                 |
+|   - Verified on Hardware: All 8 screens + touch navigation              |
+|   - Configured as offline demo data today (zero network requests)       |
 |   - Planned: HTTPS GET /state with Pinned Root CA                       |
 +-------------------------------------------------------------------------+
                                                                |
@@ -91,7 +92,7 @@ The project strictly adheres to nine core security invariants:
 2. **Untrusted LAN Adjacent Device (Network Eavesdropper):**
    - *Vector:* Compromised IoT device or guest on the same Wi-Fi network.
    - *Goal:* Intercept tokens or spoof backend responses to alter data on the desk fixture.
-   - *Mitigation:* Backend defaults to `127.0.0.1` (invisible to LAN); physical firmware is verified running offline with mock/demo data on real ESP32 hardware, and future Wi-Fi integration is prepared with an optional `PULSEBOX_DEVICE_KEY` that cannot alter state, plus a pinned Root CA header for TLS connections.
+   - *Mitigation:* Backend defaults to `127.0.0.1` (invisible to LAN); physical firmware is configured to run offline with mock/demo data and zero network requests (with all 8 screens and touch navigation verified on hardware), and future Wi-Fi integration is prepared with an optional `PULSEBOX_DEVICE_KEY` that cannot alter state, plus a pinned Root CA header for TLS connections.
 3. **Desk Passerby / Accidental Physical Touch:**
    - *Vector:* Inadvertent touch or curious coworker tapping the physical desk display.
    - *Goal:* Accidental power-off, focus timer cancellation, or settings wipe.

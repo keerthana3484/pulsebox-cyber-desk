@@ -11,11 +11,11 @@ This document provides ready-to-publish collateral for showcasing **PulseBox Cyb
 ```markdown
 I got tired of [YOUR REAL REASON HERE].
 
-So I built PulseBox Cyber Desk: an ambient hardware monitor for an ESP32 with a 2.8" SPI touchscreen, paired with a Python Flask API and a pixel-accurate web simulator. It translates dev ops into an original 8px voxel world with a reactive mascot and Day/Night palettes.
+So I built PulseBox Cyber Desk: an ambient hardware monitor on an ESP32 with a 2.8" SPI touchscreen, paired with a Python Flask API and a pixel-accurate web simulator. It translates dev ops into an original 8px voxel world with a reactive mascot and Day/Night palettes.
 
 The hardest challenge? The 1-second glance rule on a 320x240 screen. Traditional dashboards fail from 3 feet away. I enforced a ruthless constraint: each screen has 1 hero element and 5 words or fewer on overview. Secondary metrics live behind a tap, powered by a token compiler outputting both CSS and embedded RGB565 C++ headers.
 
-What I learned: Ruthless constraints breed clarity. Designing the simulator first made real-device bring-up seamless—all 8 screens, touch navigation, and dirty-region redraws verified cleanly on physical glass.
+What I learned: Ruthless constraints breed clarity. Designing the simulator first made real-device bring-up smooth—I verified all 8 screens and touch navigation on the physical hardware with no display flicker.
 
 Roadmap: Add a Wi-Fi client reading GET /state over HTTPS with our pinned CA, and test long-run thermal stability.
 
@@ -23,7 +23,7 @@ Live web demo: [LINK]
 Code: [LINK]
 ```
 
-*(Word count: 168 words — strictly under 200 words)*
+*(Word count: 160 words — strictly under 200 words)*
 
 ---
 
@@ -50,7 +50,7 @@ Code: [LINK]
 
 Add these impactful, metric-driven bullet points to your software engineering resume:
 
-- **Full-Stack IoT Architecture & Embedded Bring-Up (Python, ESP32/C++, JavaScript):** Built and physically verified an ambient developer monitoring system combining a Python Flask REST API with an ESP32 C++ firmware architecture (ILI9341 / Arduino Framework) and a pixel-accurate web simulator; verified all 8 native screens and touch navigation on real hardware.
-- **Embedded UI & Token Compiler:** Designed a glanceable 320×240 embedded interface enforcing a $\le 5$-word overview limit with progressive disclosure; developed a dual 16-color design token compiler outputting web CSS and 16-bit RGB565 C++ macros for flicker-free dirty-region redraws on physical glass.
+- **Full-Stack IoT Architecture & Embedded Bring-Up (Python, ESP32/C++, JavaScript):** Built and physically brought up an ambient developer monitoring system combining a Python Flask REST API with an ESP32 C++ firmware architecture (ILI9341 / Arduino Framework) and a pixel-accurate web simulator; verified all 8 native screens and touch navigation on the physical device.
+- **Embedded UI & Token Compiler:** Designed a glanceable 320×240 embedded interface enforcing a $\le 5$-word overview limit with progressive disclosure; developed a dual 16-color design token compiler outputting web CSS and 16-bit RGB565 C++ macros for smooth partial redraws.
 - **Hardened Security & CI Automation:** Implemented role-based token authentication (admin token vs. prepared scoped device token), loopback-only binding, sliding-window rate limiting, and automated CI test suites with 100% pass rate across 75 Pytest and 135 simulator tests.
 

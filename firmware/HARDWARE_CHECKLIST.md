@@ -10,17 +10,18 @@ The project has been physically assembled and verified on bench hardware with th
 
 | Component | Part / Model | Role / Specifications | Verification Status |
 |:---|:---|:---|:---:|
-| **Microcontroller** | ESP32-WROOM-32 DevKit (30-pin, ESP32-D0WD-V3) | 240 MHz dual-core Xtensa, 320 KB SRAM, 4 MB Flash | **VERIFIED ON HARDWARE** |
-| **Display Panel** | 2.8" SPI TFT LCD (MSP2807 / ILI9341) | 320 × 240 pixels (landscape), 16-bit RGB565 color | **VERIFIED ON HARDWARE** |
-| **Digitizer** | XPT2046 / HR2046 Resistive Touch Controller | SPI touch interface, dedicated chip select | **VERIFIED ON HARDWARE** |
+| **Microcontroller** | ESP32 DevKit (30-pin, ESP32-WROOM-32) | 240 MHz dual-core Xtensa, 320 KB SRAM, 4 MB Flash | **VERIFIED ON HARDWARE** |
+| **Display Panel** | 2.8" SPI TFT LCD (ILI9341 / 320×240) | 320 × 240 pixels (landscape), 16-bit RGB565 color | **VERIFIED ON HARDWARE** |
+| **Digitizer** | XPT2046 Resistive Touch Controller | SPI touch interface, dedicated chip select | **VERIFIED ON HARDWARE** |
 | **Interconnect** | Breadboard & jumper wires / SPI bus | VSPI hardware bus + shared touch lines | **VERIFIED ON HARDWARE** |
-| **USB Interface** | Silicon Labs CP2102 USB-to-UART Bridge | 115200 baud serial monitor & flashing | **VERIFIED ON HARDWARE** |
+| **Power Setup** | Standard USB cable to ESP32 DevKit only | Powers both ESP32 and display module | **VERIFIED ON HARDWARE** |
 
 > [!IMPORTANT]
 > **Current Real Hardware Operational Status:**
-> - **Display & Touch:** All 8 screens display correctly on real glass. The XPT2046 resistive touchscreen is functional; taps accurately actuate the 8-slot hotbar and open behind-the-tap detail views.
-> - **Rendering & Palettes:** 16-color Day and Night palettes render cleanly without color inversion (`TFT_RGB_ORDER=1`). Dirty-region redraws avoid screen-wide flicker.
-> - **Current Telemetry:** The firmware (`firmware/src/main.cpp`) operates entirely offline with zero network requests, rendering local mock/demo data for UI validation.
+> - **Display & Touch:** All 8 screens display correctly on the physical 320×240 LCD. Touchscreen navigation works across all 8 hotbar slots and behind-the-tap detail views toggle cleanly.
+> - **Display Quality:** No display flicker was observed; dirty-region partial redraws render smoothly.
+> - **Current Telemetry:** The firmware (`firmware/src/main.cpp`) is configured to run offline with zero network requests, rendering local mock/demo data for UI validation.
+> - **Problems Hit:** None reported during bench bring-up.
 > - **NOT Tested on Hardware:** Wi-Fi connection, live HTTPS synchronization with the Flask backend, and long-run 24h+ thermal/power stability remain untested on physical hardware (marked as planned in the roadmap).
 
 ---
@@ -46,9 +47,8 @@ Connect the 2.8" ILI9341 TFT display module to the 30-pin ESP32 DevKit according
 | **13** | `T_DO` | `GPIO 19` | Touch MISO (shared with VSPI MISO) |
 | **14** | `T_IRQ` | `NC` | Touch interrupt (software polling used in firmware) |
 
-### Power & Jumper Configuration Notes
-- **Jumper J1:** If powering `VCC` from the ESP32's `5V`/`VIN` pin, leave solder jumper J1 on the display back OPEN. If powering strictly from `3.3V`, bridge solder jumper J1 to bypass the onboard regulator.
-- **Backlight (`LED`):** Connect to the ESP32 `3.3V` rail. Do NOT connect directly to `5V` without a current-limiting resistor to avoid damaging the LED string.
+### Power Setup
+The physical device is powered via a standard USB cable connected to the ESP32 DevKit only, which provides power to both the microcontroller and the display module.
 
 ---
 
@@ -79,42 +79,48 @@ pio device monitor -b 115200
 
 ## 4. Hardware Verification Checklist
 
-Use this checklist to confirm proper physical behavior on the assembled device:
+Use this checklist to track physical behavior on the assembled device:
 
 ### Bench Setup & Power-Up
-- [x] **Wiring Inspection:** Verify SPI pins (MOSI: 23, SCK: 18, MISO: 19, CS: 5, DC: 27, RST: 4, T_CS: 21).
-- [x] **Power Rail:** Display powers up with white backlight on 3.3V; ESP32 powers via USB.
-- [x] **Serial Heartbeat:** Serial console at 115200 baud outputs boot sequence logs.
+- [x] **Wiring Inspection:** SPI pins (MOSI: 23, SCK: 18, MISO: 19, CS: 5, DC: 27, RST: 4, T_CS: 21) verified matching the wiring table.
+- [x] **Power Rail:** Verified powering via standard USB cable to ESP32 DevKit only.
+- [ ] **Serial Console Logs:** Serial console at 115200 baud outputs boot sequence logs (configured in firmware).
 
-### Boot Sequence
-- [x] **Stage 1 (T=0ms):** Midnight canvas (#05070D) appears with cyan text `"PULSEBOX VOXEL INITIALIZING..."` and 16-color progress bar.
-- [x] **Stage 2 (T=600ms):** PulseBot mascot appears in IDLE state with steady visor eyes.
-- [x] **Stage 3 (T=1300ms):** Mascot shifts to HAPPY expression with emerald beacon.
-- [x] **Stage 4 (T=2100ms):** Automatically mounts Dashboard Screen 1 (HOME) with Status Bar and 8-slot Hotbar.
+### Boot Sequence (Configured in `main.cpp`)
+- [ ] **Stage 1 (T=0ms):** Initialization canvas appears with 16-color progress bar.
+- [ ] **Stage 2 (T=600ms):** PulseBot mascot appears in IDLE state.
+- [ ] **Stage 3 (T=1300ms):** Mascot shifts to HAPPY expression.
+- [ ] **Stage 4 (T=2100ms):** Automatically mounts Dashboard Screen 1 (HOME).
 
 ### Global Navigation & Touchscreen
-- [x] **Top Status Bar (16px):** Mini `[SIM]` tag, WiFi RSSI icon, pulsing heartbeat dot, clock `HH:MM`, theme badge (`NIGHT`/`DAY`), power icon.
+- [x] **Top Status Bar (16px):** Shows mini `[SIM]` tag, WiFi RSSI icon, pulsing heartbeat dot, clock `HH:MM`, theme badge (`NIGHT`/`DAY`).
 - [x] **Bottom Hotbar (32px):** 8 inventory slots fill 320px evenly (40px each): `[1 HOME]`, `[2 SRV]`, `[3 INC]`, `[4 COST]`, `[5 DEP]`, `[6 WTHR]`, `[7 TIME]`, `[8 SET]`.
-- [x] **Touchscreen Actuation:** Tapping any hotbar slot with finger or stylus switches to that screen.
-- [x] **Behind-The-Tap Detail View:** Tapping the hero element or action button opens the detail view; tapping `[◀ BACK]` returns to the overview.
+- [x] **Touchscreen Actuation:** Verified: touchscreen works across all 8 hotbar slots.
+- [x] **Behind-The-Tap Detail View:** Verified: tapping hero or action button toggles detail view cleanly; `[◀ BACK]` returns to overview.
 
-### Screen-by-Screen Display Verification (All 8 Screens Verified)
-- [x] **Screen 1: HOME** — Shows PulseBot mascot + shield icon, `ALL GOOD` status badge, telemetry detail grid.
-- [x] **Screen 2: SERVERS** — Shows 5-heart voxel bar (10 HP), `6 HAPPY` metric, node latency breakdown in detail view.
-- [x] **Screen 3: INCIDENTS** — Shows shield/potion visual, `ALL CLEAR` nominal badge, outage triage detail view.
-- [x] **Screen 4: CLOUD COSTS** — Shows vault crystal + XP level bar, `ON TRACK` metric, 15-day spend trend in detail view.
-- [x] **Screen 5: DEPLOY** — Shows voxel rocket + compass, `LET'S SHIP` metric, staging/production version cards.
-- [x] **Screen 6: WEATHER+CLOCK** — Shows dynamic sky (Sun/Moon), live clock digits, temperature + live condition word.
-- [x] **Screen 7: FOCUS TIMER** — Shows large countdown digits, XP progress bar, `FOCUS TIME` / `CHILL TIME` toggle, preset buttons in detail view.
-- [x] **Screen 8: SETTINGS** — Shows wrench + battery icons, `SETTINGS` metric, CRT scanline and Day/Night palette toggles in detail view.
+### Screen-by-Screen Display Verification (All 8 Screens Verified on Glass)
+- [x] **Screen 1: HOME** — Displays correctly (PulseBot mascot + shield icon, `ALL GOOD` status badge, telemetry detail grid).
+- [x] **Screen 2: SERVERS** — Displays correctly (5-heart voxel bar, `6 HAPPY` metric, node latency breakdown in detail view).
+- [x] **Screen 3: INCIDENTS** — Displays correctly (shield/potion visual, `ALL CLEAR` nominal badge, outage triage detail view).
+- [x] **Screen 4: CLOUD COSTS** — Displays correctly (crystal + XP level bar, `ON TRACK` metric, 15-day spend trend in detail view).
+- [x] **Screen 5: DEPLOY** — Displays correctly (voxel rocket + compass, `LET'S SHIP` metric, staging/production version cards).
+- [x] **Screen 6: WEATHER+CLOCK** — Displays correctly (dynamic sky, live clock digits, temperature + live condition word).
+- [x] **Screen 7: FOCUS TIMER** — Displays correctly (countdown digits, XP progress bar, `FOCUS TIME` / `CHILL TIME` toggle, preset buttons in detail view).
+- [x] **Screen 8: SETTINGS** — Displays correctly (wrench + battery icons, `SETTINGS` metric, CRT scanline and Day/Night palette toggles in detail view).
 
 ### Display Quality & Redraws
-- [x] **Palette Fidelity:** Verified 16-color Day and Night palettes match design tokens without color banding.
-- [x] **Dirty-Region Redraws:** Mascot eye blinks, status bar clock updates, and focus timer countdown redraw only dirty pixel bounding boxes without flickering the rest of the display.
+- [x] **Display Quality & Flicker:** Verified: no display flicker observed; dirty-region partial redraws render smoothly.
+- [ ] **Color Order Configuration:** Configured as `-D TFT_RGB_ORDER=1` in `platformio.ini`.
 
 ---
 
-## 5. Items Planned for Future Milestones (Not Tested on Hardware)
+## 5. Problems Hit & Fixes
+
+- **Problems hit during bench bring-up:** None. The firmware compiled, uploaded via PlatformIO, and ran on the physical fixture without hardware issues.
+
+---
+
+## 6. Items Planned for Future Milestones (Not Tested on Hardware)
 
 The following capabilities are marked as planned and have NOT yet been executed on physical hardware:
 - [ ] **Wi-Fi Client HTTPS Sync:** Connecting to local WPA2/WPA3 access point and fetching `GET /state` from the Flask backend using the pinned ISRG Root X1 certificate in `ca_cert.h`.
@@ -123,7 +129,7 @@ The following capabilities are marked as planned and have NOT yet been executed 
 
 ---
 
-## 6. Serial UART Diagnostics & Debug Commands
+## 7. Serial UART Diagnostics & Debug Commands
 
 You can interact with the physical device over the USB serial terminal at 115200 baud using these commands:
 
