@@ -9,28 +9,7 @@
 
 > **A tactile physical-digital micro desk fixture and 320×240 embedded display that bridges real-world developer operations with an original retro-voxel aesthetic.**
 
-[🎮 Launch Live Web Simulator Demo](https://keerthana3484.github.io/pulsebox-cyber-desk/) &nbsp;|&nbsp; [📖 Design Specification](docs/DESIGN.md) &nbsp;|&nbsp; [🔒 Security Policy](SECURITY.md)
-
----
-
-## 📷 Physical Device Hardware
-
-<div align="center">
-  <table>
-    <tr>
-      <td align="center"><b>Physical Desk Display (Front View)</b></td>
-      <td align="center"><b>Physical Desk Display (Running)</b></td>
-    </tr>
-    <tr>
-      <td><img src="docs/photos/device_front.jpg" width="310" alt="PulseBox Hardware Front View" /></td>
-      <td><img src="docs/photos/device_running.jpg" width="310" alt="PulseBox Hardware Running Live" /></td>
-    </tr>
-    <tr>
-      <td align="center"><em>ESP32 DevKit + 2.8" ILI9341 SPI TFT assembly</em></td>
-      <td align="center"><em>Real hardware verified displaying native voxel UI</em></td>
-    </tr>
-  </table>
-</div>
+[🎮 Launch Live Web Simulator Demo](https://keerthana3484.github.io/pulsebox-cyber-desk/simulator.html) &nbsp;|&nbsp; [📖 Design Specification](docs/DESIGN.md) &nbsp;|&nbsp; [🔒 Security Policy](SECURITY.md)
 
 ---
 
