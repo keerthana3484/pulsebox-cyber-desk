@@ -9,21 +9,21 @@ This document provides ready-to-publish collateral for showcasing **PulseBox Cyb
 ### Copy (Ready to Paste)
 
 ```markdown
-I got tired of having dozens of cluttered browser tabs and distracting dashboards open just to keep an eye on servers, deployments, and cloud costs.
+I got tired of keeping dozens of browser tabs and noisy dashboards open just to check on servers, deployments, and cloud costs.
 
-So I built PulseBox Cyber Desk: an ambient hardware monitor on an ESP32 with a 2.8" SPI touchscreen, paired with a Python Flask API and a pixel-accurate web simulator. It translates dev ops into an original 8px voxel world with a reactive mascot and Day/Night palettes.
+So I built PulseBox Cyber Desk: an ambient monitor on an ESP32 with a 2.8" SPI touchscreen, paired with a Python Flask backend and a web simulator. While the simulator connects to the live Flask API, the physical device currently runs built-in demo data offline.
 
-The hardest challenge? The 1-second glance rule on a 320x240 screen. Traditional dashboards fail from 3 feet away. I enforced a ruthless constraint: each screen has 1 hero element and 5 words or fewer on overview. Secondary metrics live behind a tap, powered by a token compiler outputting both CSS and embedded RGB565 C++ headers.
+The hardest challenge was the 1-second glance rule on a 320x240 screen. Traditional dashboards fail from 3 feet away. I enforced a strict constraint: each screen has 1 hero visual and 5 words or fewer on overview. Secondary metrics live behind a tap, powered by a token compiler outputting CSS and RGB565 C++ macros.
 
-What I learned: Ruthless constraints breed clarity. Designing the simulator first made real-device bring-up smooth—I verified all 8 screens and touch navigation on the physical hardware with no display flicker.
+What I learned: Designing the simulator first made hardware bring-up smooth—all 8 screens and touch navigation are verified on the real device with no display flicker.
 
-Roadmap: Add a Wi-Fi client reading GET /state over HTTPS with our pinned CA, and test long-run thermal stability.
+Next milestone: Connect the ESP32 to Wi-Fi to fetch live Flask data over HTTPS with a pinned CA, and test long-run thermal stability.
 
-Live web demo: https://keerthana3484.github.io/pulsebox-cyber-desk/simulator.html
+Live demo: https://keerthana3484.github.io/pulsebox-cyber-desk/simulator.html
 Code: https://github.com/keerthana3484/pulsebox-cyber-desk
 ```
 
-*(Word count: 181 words — strictly under 200 words)*
+*(Word count: 175 words — strictly under 200 words)*
 
 ---
 
