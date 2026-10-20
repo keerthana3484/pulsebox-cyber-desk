@@ -13,6 +13,27 @@
 
 ---
 
+## 📷 Physical Device Hardware
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><b>Physical Desk Display (Front View)</b></td>
+      <td align="center"><b>Physical Desk Display (Running)</b></td>
+    </tr>
+    <tr>
+      <td><img src="docs/photos/device_front.jpg" width="310" alt="PulseBox Hardware Front View" /></td>
+      <td><img src="docs/photos/device_running.jpg" width="310" alt="PulseBox Hardware Running Live" /></td>
+    </tr>
+    <tr>
+      <td align="center"><em>ESP32 DevKit + 2.8" ILI9341 SPI TFT assembly</em></td>
+      <td align="center"><em>Real hardware verified displaying native voxel UI</em></td>
+    </tr>
+  </table>
+</div>
+
+---
+
 ## 📽️ Hero Preview
 
 <div align="center">
@@ -49,8 +70,11 @@ PulseBox is a hybrid embedded IoT fixture and developer dashboard built for engi
 Sitting on your desk, PulseBox couples an **ESP32 microcontroller** and **2.8-inch 320×240 touchscreen display** with a hardened **Python Flask backend** and a **pixel-accurate web embedded simulator**. It translates real-time microservice health, incident alerts, cloud infrastructure burn rates, release pipeline states, weather, and focus sprints into an original voxel / sandbox visual language.
 
 > [!NOTE]
-> **Current Firmware Status:**
-> Today, the ESP32 firmware (`firmware/src/main.cpp`) operates entirely offline rendering local mock/demo data to validate 320×240 screen layouts, dirty-region partial redraws, touch coordinates, and Day/Night palettes on real glass without network dependencies. Live Wi-Fi client synchronization over HTTPS with pinned CA is prepared and outlined in the Roadmap.
+> **Hardware Status (Verified on Real Device):**
+> PulseBox has been physically assembled and verified on a 30-pin **ESP32-WROOM-32 DevKit** paired with a **2.8" ILI9341 SPI TFT (320×240) and XPT2046 resistive touchscreen**.
+> - **Display & Touch:** All 8 native screens display correctly on real glass, touch navigation across the hotbar and detail views is fully functional, and 16-color Day/Night palettes render with dirty-region partial redraws.
+> - **Current Telemetry:** The firmware (`firmware/src/main.cpp`) currently displays local mock/demo telemetry offline with zero network requests.
+> - **Planned Roadmap:** Wi-Fi client connectivity, HTTPS synchronization with the Flask backend, and long-run thermal/power stability remain planned milestones.
 
 ### Key Capabilities
 - **Glanceable Telemetry:** Designed for comprehension in under 1 second from 3 feet away.
@@ -100,10 +124,10 @@ flowchart TD
         end
     end
 
-    subgraph Physical_Hardware ["Desk Hardware Fixture (Offline Mock Data Today)"]
+    subgraph Physical_Hardware ["Desk Hardware Fixture (Verified on Hardware)"]
         ESP32["ESP32 Microcontroller\nArduino Framework / C++"]
-        TFT_Display["2.8' ILI9341 SPI TFT LCD\n320x240 @ 16-bit RGB565"]
-        Touchscreen["XPT2046 Resistive Touchscreen\nSPI Digitizer with Clamping"]
+        TFT_Display["2.8' ILI9341 SPI TFT LCD\nVerified on Real Glass"]
+        Touchscreen["XPT2046 Resistive Touchscreen\nVerified Touch Actuation"]
         Firmware_TLS["WiFiClientSecure (Prepared / Planned)\nPinned ISRG Root X1 CA (ca_cert.h)"]
     end
 
@@ -192,7 +216,7 @@ The project boasts comprehensive automated test coverage spanning Python unit/in
 | **Cloud Costs Module** | [tests/test_frontend_costs.js](tests/test_frontend_costs.js) | **32** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Weather & Clock Screen** | [tests/test_frontend_weather_clock.js](tests/test_frontend_weather_clock.js) | **33** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
 | **Incident Logging** | [tests/test_frontend_incidents.js](tests/test_frontend_incidents.js) | **27** passed | ![100%](https://img.shields.io/badge/pass-100%25-brightgreen) |
-| **ESP32 Firmware Build** | [firmware/src/main.cpp](firmware/src/main.cpp) | **PlatformIO** (Offline Mock Data) | ![Build Passing](https://img.shields.io/badge/PlatformIO-Compiled-brightgreen) |
+| **ESP32 Firmware Build** | [firmware/src/main.cpp](firmware/src/main.cpp) | **PlatformIO** (Verified on ESP32 + ILI9341) | ![Build Passing](https://img.shields.io/badge/PlatformIO-Verified-brightgreen) |
 | **TOTAL ASSERTIONS** | — | **748 checks** | **100% PASS** |
 
 ### Firmware Resource Footprint (ESP32)
@@ -202,11 +226,54 @@ The project boasts comprehensive automated test coverage spanning Python unit/in
 
 ---
 
+## 🛠️ Hardware Build Notes
+
+PulseBox Cyber Desk was physically assembled and verified on bench hardware using an **ESP32 DevKit (30-pin, ESP32-WROOM-32)** and a **2.8" SPI TFT LCD (ILI9341 / MSP2807)** with an onboard **XPT2046 resistive touch digitizer**.
+
+### Physical Wiring Table
+| Display Pin # | Header Silkscreen | ESP32 GPIO Pin | Function / Description |
+|:---:|:---|:---|:---|
+| **1** | `VCC` | `5V` (or `VIN`) | Power supply (onboard 3.3V LDO regulator active) |
+| **2** | `GND` | `GND` | Common ground reference (0V) |
+| **3** | `CS` | `GPIO 5` | Hardware VSPI Display Chip Select (active low) |
+| **4** | `RESET` / `RST` | `GPIO 4` | Hardware display reset line |
+| **5** | `DC` / `RS` | `GPIO 27` | Data / Command selector (safe GPIO, avoids GPIO 2 strapping) |
+| **6** | `SDI` / `MOSI` | `GPIO 23` | Hardware VSPI Master Out Slave In |
+| **7** | `SCK` / `CLK` | `GPIO 18` | Hardware VSPI Serial Clock |
+| **8** | `LED` / `BLK` | `3.3V` | Backlight LED rail (constant brightness) |
+| **9** | `SDO` / `MISO` | `GPIO 19` | Hardware VSPI Master In Slave Out |
+| **10** | `T_CLK` | `GPIO 18` | Touch Serial Clock (shared with VSPI SCK) |
+| **11** | `T_CS` | `GPIO 21` | Dedicated Touch Chip Select (active low) |
+| **12** | `T_DIN` | `GPIO 23` | Touch MOSI (shared with VSPI MOSI) |
+| **13** | `T_DO` | `GPIO 19` | Touch MISO (shared with VSPI MISO) |
+| **14** | `T_IRQ` | `NC` | Touch interrupt (software polling used in firmware) |
+
+### PlatformIO Flashing Command
+To compile and flash the firmware directly to the connected ESP32 via USB:
+```bash
+cd firmware
+pio run -e esp32_draft -t upload
+```
+
+To open the live serial diagnostics console at 115200 baud:
+```bash
+pio device monitor -b 115200
+```
+
+### Hardware Verification & Tuning Notes
+1. **Touch Digitizer SPI Calibration:** The XPT2046 touch controller clock is configured to 2.5 MHz (`-D SPI_TOUCH_FREQUENCY=2500000`) on dedicated chip select `TOUCH_CS=21` to ensure crisp, debounce-free touch readings without bus contention.
+2. **Color Order & Palette Fidelity:** Enforced `-D TFT_RGB_ORDER=1` in `platformio.ini` to guarantee the 16-color Day and Night palettes render accurately without color inversion on the physical ILI9341 panel.
+3. **Power Rail & J1 Jumper:** Powered `VCC` from the ESP32's 5V rail with display solder jumper J1 left OPEN, utilizing the display's onboard 3.3V regulator while connecting the backlight to 3.3V.
+4. **Flicker-Free Dirty-Region Redraws:** Verified that mascot blinking, status bar clock ticks, and countdown decrements redraw only dirty bounding boxes, eliminating whole-screen redraw flicker on real hardware.
+
+---
+
 ## 🗺️ Roadmap
 
-1. **Flash & Calibrate on Real Hardware:** Flash the compiled PlatformIO firmware binary to physical ESP32 + 2.8" ILI9341 display modules, calibrate XPT2046 resistive touch coordinates on real glass, and benchmark dirty-region redraw latency.
+1. **[COMPLETED] Flash & Calibrate on Real Hardware:** Built and verified on physical ESP32-WROOM-32 + 2.8" ILI9341 SPI TFT hardware. Confirmed all 8 screens render correctly on real glass, XPT2046 touch navigation operates smoothly, and dirty-region redraws eliminate display flicker.
 2. **Wi-Fi Client with Pinned CA:** Implement a dedicated Wi-Fi client that connects to local WPA2/WPA3 networks and periodically executes `GET /state` over HTTPS, verifying server identity against the pinned ISRG Root X1 certificate in `ca_cert.h`.
 3. **Optional Scoped Device Token:** Support an optional device token (`PULSEBOX_DEVICE_KEY`) only if the physical fixture is configured to post telemetry (`POST /record-health-check`) back to the Flask backend; standard read-only polling remains unauthenticated by design.
+4. **Long-Run Thermal & Power Stability:** Conduct continuous 24-hour burn-in benchmarks to monitor thermal dissipation, memory stability, and power draw under extended operation.
 
 ---
 

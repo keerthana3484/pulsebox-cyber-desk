@@ -1,119 +1,145 @@
-# Physical Hardware Identification Checklist
+# PulseBox Cyber Desk — Physical Hardware Wiring & Testing Guide
 
-Before connecting any jumper wires or writing code, complete this beginner-friendly inspection. Different manufacturers produce visually similar modules with different pinouts, logic levels, or chips. Verifying these details prevents damaged hardware and hours of troubleshooting.
-
-> [!NOTE]
-> **Firmware Data & Network Status Today:**
-> The current ESP32 firmware (`firmware/src/main.cpp`) operates entirely offline rendering local mock/demo data for verifying display rendering, dirty-region redraws, touch coordinates, and Day/Night palettes on real glass. It makes **zero network or HTTP requests**.
-> Live Wi-Fi connectivity, HTTPS client requests (`GET /state`) with pinned Root CA (`ca_cert.h`), and backend synchronization are planned for future roadmap milestones. Any device token (`PULSEBOX_DEVICE_KEY`) is optional/future, only needed if the device ever posts telemetry data.
+This unified guide combines physical component inspection, hardware wiring, PlatformIO flashing instructions, and real-device verification checklists for the physical ESP32 + 2.8" ILI9341 touch desk fixture.
 
 ---
 
-## 1. ESP32 Development Board Inspection
+## 1. Verified Hardware Bill of Materials (BOM)
 
-### A. Metal Can Markings
-Inspect the silver rectangular RF shield on the top of the ESP32 board.
-- [ ] What is the exact text engraved on the metal can?
-  - Examples: `ESP-WROOM-32`, `ESP-WROOM-32D`, `ESP32-WROOM-32E`, `ESP32-S3-WROOM-1`, `ESP32-C3`
-  - *Why this matters:* Classic `ESP-WROOM-32` has different hardware SPI pins and memory architectures than `ESP32-S3` or `ESP32-C3`.
+The project has been physically assembled and verified on bench hardware with the following components:
 
-### B. Pin Count
-Count the total number of header pins on the board (both sides combined):
-- [ ] Is your board **30-pin** (15 pins per side) or **38-pin** (19 pins per side)?
-  - *Why this matters:* 30-pin and 38-pin boards map GPIO numbers to different physical positions on the edges.
+| Component | Part / Model | Role / Specifications | Verification Status |
+|:---|:---|:---|:---:|
+| **Microcontroller** | ESP32-WROOM-32 DevKit (30-pin, ESP32-D0WD-V3) | 240 MHz dual-core Xtensa, 320 KB SRAM, 4 MB Flash | **VERIFIED ON HARDWARE** |
+| **Display Panel** | 2.8" SPI TFT LCD (MSP2807 / ILI9341) | 320 × 240 pixels (landscape), 16-bit RGB565 color | **VERIFIED ON HARDWARE** |
+| **Digitizer** | XPT2046 / HR2046 Resistive Touch Controller | SPI touch interface, dedicated chip select | **VERIFIED ON HARDWARE** |
+| **Interconnect** | Breadboard & jumper wires / SPI bus | VSPI hardware bus + shared touch lines | **VERIFIED ON HARDWARE** |
+| **USB Interface** | Silicon Labs CP2102 USB-to-UART Bridge | 115200 baud serial monitor & flashing | **VERIFIED ON HARDWARE** |
 
-### C. USB-to-UART Bridge Chip
-Look at the small black chip located directly behind the micro-USB or USB-C connector:
-- [ ] What chip is it?
-  - **Square chip** with a silhouetted bird/dragon logo: **CP2102 / CP2104** (Silicon Labs)
-  - **Rectangular chip** labeled `CH340G`, `CH340C`, or `CH9102`: WCH USB bridge
-  - **No extra chip** (only buttons and dual USB-C ports): Native ESP32-S3 USB
-  - *Why this matters:* Tells us which driver Windows needs to detect the board.
-
-### D. Windows Cable & COM Port Verification
-1. Connect the ESP32 board to your Windows laptop using your USB cable.
-2. Open **Device Manager** in Windows (press `Win + X`, then choose *Device Manager*).
-3. Expand the **Ports (COM & LPT)** section.
-- [ ] Does a COM port appear when you plug the board in (e.g., `Silicon Labs CP210x USB to UART Bridge (COM3)` or `USB-SERIAL CH340 (COM4)`)?
-  - **YES:** Note down the COM port number: `COM___`
-  - **NO (Device not recognized / Yellow exclamation mark):** Driver needs to be installed (CP210x or CH34x driver).
-  - **NO (Nothing appears at all):** Your USB cable may be a **charge-only cable** without data lines. Try a different USB cable that is confirmed to transfer data with a phone or storage device.
+> [!IMPORTANT]
+> **Current Real Hardware Operational Status:**
+> - **Display & Touch:** All 8 screens display correctly on real glass. The XPT2046 resistive touchscreen is functional; taps accurately actuate the 8-slot hotbar and open behind-the-tap detail views.
+> - **Rendering & Palettes:** 16-color Day and Night palettes render cleanly without color inversion (`TFT_RGB_ORDER=1`). Dirty-region redraws avoid screen-wide flicker.
+> - **Current Telemetry:** The firmware (`firmware/src/main.cpp`) operates entirely offline with zero network requests, rendering local mock/demo data for UI validation.
+> - **NOT Tested on Hardware:** Wi-Fi connection, live HTTPS synchronization with the Flask backend, and long-run 24h+ thermal/power stability remain untested on physical hardware (marked as planned in the roadmap).
 
 ---
 
-## 2. 2.8-inch TFT Display Module Inspection
+## 2. Complete Hardware Wiring Table
 
-### A. Module Physical Specifications
-- [ ] Display diagonal size: Confirm it is approximately 2.8 inches across the glass active area.
-- [ ] Landscape resolution target: 320 × 240 pixels (native portrait is 240 × 320, which is rotated 90° or 270° in firmware).
+Connect the 2.8" ILI9341 TFT display module to the 30-pin ESP32 DevKit according to this pinout:
 
-### B. Silkscreen Labels on the Back of the PCB
-Turn the display over and inspect the text printed in white or gold directly on the red or blue PCB.
-- [ ] What is the exact title / model printed on the back?
-  - Common examples: `2.8" SPI 240x320`, `TJCTM24028-SPI`, `MSP2807`, `ILI9341V`
-- [ ] Is there an onboard 3-pin voltage regulator chip (usually a tiny black component labeled `662K` or `AMS1117-3.3` or `U1`)?
-  - *Why this matters:* If present, the `VCC` pin can accept either 3.3V or 5V from the ESP32. If absent, `VCC` must strictly be 3.3V.
+| Header Pin # | Display Silkscreen Label | ESP32 GPIO Pin | Function / Description |
+|:---:|:---|:---|:---|
+| **1** | `VCC` | `5V` (or `VIN`) | Power supply (display onboard 3.3V LDO regulator active) |
+| **2** | `GND` | `GND` | Common ground reference (0V) |
+| **3** | `CS` | `GPIO 5` | Hardware VSPI Display Chip Select (active low) |
+| **4** | `RESET` / `RST` | `GPIO 4` | Hardware display reset line |
+| **5** | `DC` / `RS` | `GPIO 27` | Data / Command selector (safe GPIO, avoids GPIO 2 strapping) |
+| **6** | `SDI` / `MOSI` | `GPIO 23` | Hardware VSPI Master Out Slave In |
+| **7** | `SCK` / `CLK` | `GPIO 18` | Hardware VSPI Serial Clock |
+| **8** | `LED` / `BLK` | `3.3V` | Backlight power rail |
+| **9** | `SDO` / `MISO` | `GPIO 19` | Hardware VSPI Master In Slave Out |
+| **10** | `T_CLK` | `GPIO 18` | Touch Serial Clock (shared with VSPI SCK) |
+| **11** | `T_CS` | `GPIO 21` | Dedicated Touch Chip Select (active low) |
+| **12** | `T_DIN` | `GPIO 23` | Touch MOSI (shared with VSPI MOSI) |
+| **13** | `T_DO` | `GPIO 19` | Touch MISO (shared with VSPI MISO) |
+| **14** | `T_IRQ` | `NC` | Touch interrupt (software polling used in firmware) |
 
-### C. Exact Header Pin Markings (Read Left to Right)
-Write down the exact label of every pin on the display header in order.
-Common 14-pin or 18-pin breakouts look like this:
-
-| Pin # | Common Label | Your Display's Actual Silkscreen Label | Function |
-| :---: | :---: | :---: | :--- |
-| 1 | `VCC` | | Power supply (3.3V or 5V) |
-| 2 | `GND` | | Ground (0V) |
-| 3 | `CS` | | Display Chip Select (active low) |
-| 4 | `RESET` / `RST`| | Display Hardware Reset |
-| 5 | `DC` / `RS` | | Data/Command selector |
-| 6 | `SDI` / `MOSI`| | SPI Data In (from ESP32 to display) |
-| 7 | `SCK` / `CLK` | | SPI Serial Clock |
-| 8 | `LED` / `BLK` | | Backlight power control |
-| 9 | `SDO` / `MISO`| | SPI Data Out (from display to ESP32) |
+### Power & Jumper Configuration Notes
+- **Jumper J1:** If powering `VCC` from the ESP32's `5V`/`VIN` pin, leave solder jumper J1 on the display back OPEN. If powering strictly from `3.3V`, bridge solder jumper J1 to bypass the onboard regulator.
+- **Backlight (`LED`):** Connect to the ESP32 `3.3V` rail. Do NOT connect directly to `5V` without a current-limiting resistor to avoid damaging the LED string.
 
 ---
 
-## 3. Touch Controller Inspection
+## 3. PlatformIO Build & Upload Instructions
 
-Look at the back of the display PCB for a second integrated circuit chip:
-- [ ] Is there a 16-pin small chip (approx. 4×5 mm) present on the back?
-  - Common labels: `XPT2046`, `HR2046`, `TSC2046`, `ADS7843`
-  - If yes, note down the chip label: `__________________`
-- [ ] Are there touch-specific pins on the header?
-  - Common labels: `T_CLK`, `T_CS`, `T_DIN` (MOSI), `T_DO` (MISO), `T_IRQ` (PENIRQ)
-- [ ] Or is the footprint **unpopulated** (bare solder pads with no chip soldered on)?
-  - *Why this matters:* Many budget 2.8" displays use the same PCB for touch and non-touch variants. If the chip is unpopulated, touch is not physically available and we should rely on the 3 physical push buttons for navigation.
+The firmware is configured in `firmware/platformio.ini` using the `esp32_draft` environment:
 
----
+### Compile Firmware
+```bash
+cd firmware
+pio run -e esp32_draft
+```
+*(Build footprint: ~22 KB RAM / 6.7%, ~344 KB Flash / 26.2%, zero compiler warnings)*
 
-## 4. Backlight Power Requirements
+### Flash to Physical Device
+Connect the ESP32 to your workstation via USB cable (confirm COM port in Windows Device Manager):
+```bash
+cd firmware
+pio run -e esp32_draft -t upload
+```
 
-Look at the `LED` (or `BLK`) pin:
-- [ ] Does the back silkscreen state:
-  - `LED: 3.3V`
-  - `LED: Connect to 3.3V through resistor`
-  - `J1 / J2 solder jumper` for 3.3V/5V selection?
-- *Rule of Thumb:* Connecting the backlight directly to 5V will burn out the LEDs. Always verify whether it expects 3.3V or needs a current-limiting resistor (e.g., 47Ω to 100Ω).
-
----
-
-## 5. Push Buttons & Resistors Inspection
-
-- [ ] Confirm you have **three panel-mount momentary push buttons**.
-  - These will be mapped to the simulator's physical controls:
-    - Button 1: **PREV** (Cycle backward through screens)
-    - Button 2: **NEXT** (Cycle forward through screens)
-    - Button 3: **ACTION** (Trigger primary action or wake from standby)
-- [ ] Resistors:
-  - Inspect the color bands or multimeter reading of your resistors (e.g., 10 kΩ, 1 kΩ, 220 Ω).
-  - *Note:* The ESP32 features internal software pull-up resistors (`pinMode(pin, INPUT_PULLUP)`), which often allow wiring push buttons directly between a GPIO pin and GND without needing external resistors.
+### Open Serial Diagnostics Monitor
+```bash
+pio device monitor -b 115200
+```
 
 ---
 
-## 6. What to Share Once Inspected
+## 4. Hardware Verification Checklist
 
-Once you inspect your parts, share the following short summary:
-1. ESP32 metal can text (e.g., `ESP-WROOM-32`) and header pin count (30 or 38).
-2. Windows COM port detected in Device Manager (e.g., `COM3`).
-3. Exact pin names printed on your 2.8" display header.
-4. Whether the `XPT2046` touch chip is present or unpopulated.
-5. Solder jumpers or voltage notes printed on the display back.
+Use this checklist to confirm proper physical behavior on the assembled device:
+
+### Bench Setup & Power-Up
+- [x] **Wiring Inspection:** Verify SPI pins (MOSI: 23, SCK: 18, MISO: 19, CS: 5, DC: 27, RST: 4, T_CS: 21).
+- [x] **Power Rail:** Display powers up with white backlight on 3.3V; ESP32 powers via USB.
+- [x] **Serial Heartbeat:** Serial console at 115200 baud outputs boot sequence logs.
+
+### Boot Sequence
+- [x] **Stage 1 (T=0ms):** Midnight canvas (#05070D) appears with cyan text `"PULSEBOX VOXEL INITIALIZING..."` and 16-color progress bar.
+- [x] **Stage 2 (T=600ms):** PulseBot mascot appears in IDLE state with steady visor eyes.
+- [x] **Stage 3 (T=1300ms):** Mascot shifts to HAPPY expression with emerald beacon.
+- [x] **Stage 4 (T=2100ms):** Automatically mounts Dashboard Screen 1 (HOME) with Status Bar and 8-slot Hotbar.
+
+### Global Navigation & Touchscreen
+- [x] **Top Status Bar (16px):** Mini `[SIM]` tag, WiFi RSSI icon, pulsing heartbeat dot, clock `HH:MM`, theme badge (`NIGHT`/`DAY`), power icon.
+- [x] **Bottom Hotbar (32px):** 8 inventory slots fill 320px evenly (40px each): `[1 HOME]`, `[2 SRV]`, `[3 INC]`, `[4 COST]`, `[5 DEP]`, `[6 WTHR]`, `[7 TIME]`, `[8 SET]`.
+- [x] **Touchscreen Actuation:** Tapping any hotbar slot with finger or stylus switches to that screen.
+- [x] **Behind-The-Tap Detail View:** Tapping the hero element or action button opens the detail view; tapping `[◀ BACK]` returns to the overview.
+
+### Screen-by-Screen Display Verification (All 8 Screens Verified)
+- [x] **Screen 1: HOME** — Shows PulseBot mascot + shield icon, `ALL GOOD` status badge, telemetry detail grid.
+- [x] **Screen 2: SERVERS** — Shows 5-heart voxel bar (10 HP), `6 HAPPY` metric, node latency breakdown in detail view.
+- [x] **Screen 3: INCIDENTS** — Shows shield/potion visual, `ALL CLEAR` nominal badge, outage triage detail view.
+- [x] **Screen 4: CLOUD COSTS** — Shows vault crystal + XP level bar, `ON TRACK` metric, 15-day spend trend in detail view.
+- [x] **Screen 5: DEPLOY** — Shows voxel rocket + compass, `LET'S SHIP` metric, staging/production version cards.
+- [x] **Screen 6: WEATHER+CLOCK** — Shows dynamic sky (Sun/Moon), live clock digits, temperature + live condition word.
+- [x] **Screen 7: FOCUS TIMER** — Shows large countdown digits, XP progress bar, `FOCUS TIME` / `CHILL TIME` toggle, preset buttons in detail view.
+- [x] **Screen 8: SETTINGS** — Shows wrench + battery icons, `SETTINGS` metric, CRT scanline and Day/Night palette toggles in detail view.
+
+### Display Quality & Redraws
+- [x] **Palette Fidelity:** Verified 16-color Day and Night palettes match design tokens without color banding.
+- [x] **Dirty-Region Redraws:** Mascot eye blinks, status bar clock updates, and focus timer countdown redraw only dirty pixel bounding boxes without flickering the rest of the display.
+
+---
+
+## 5. Items Planned for Future Milestones (Not Tested on Hardware)
+
+The following capabilities are marked as planned and have NOT yet been executed on physical hardware:
+- [ ] **Wi-Fi Client HTTPS Sync:** Connecting to local WPA2/WPA3 access point and fetching `GET /state` from the Flask backend using the pinned ISRG Root X1 certificate in `ca_cert.h`.
+- [ ] **Device Telemetry Posting:** Authenticating with an optional scoped device token (`PULSEBOX_DEVICE_KEY`) to submit health telemetry via `POST /record-health-check`.
+- [ ] **Long-Run Thermal & Power Stability:** Benchmarking heat dissipation and power consumption across continuous 24-hour operation.
+
+---
+
+## 6. Serial UART Diagnostics & Debug Commands
+
+You can interact with the physical device over the USB serial terminal at 115200 baud using these commands:
+
+| Command | Action | Expected Output |
+|:---|:---|:---|
+| `0` or `home` | Switch to Screen 1 | `[NAV] Switched to Screen 0: HOME` |
+| `1` or `srv` | Switch to Screen 2 | `[NAV] Switched to Screen 1: SERVERS` |
+| `2` or `inc` | Switch to Screen 3 | `[NAV] Switched to Screen 2: INCIDENTS` |
+| `3` or `cost` | Switch to Screen 4 | `[NAV] Switched to Screen 3: CLOUD` |
+| `4` or `dep` | Switch to Screen 5 | `[NAV] Switched to Screen 4: DEPLOY` |
+| `5` or `wthr` | Switch to Screen 6 | `[NAV] Switched to Screen 5: WEATHER` |
+| `6` or `time` | Switch to Screen 7 | `[NAV] Switched to Screen 6: FOCUS` |
+| `7` or `set` | Switch to Screen 8 | `[NAV] Switched to Screen 7: SETTINGS` |
+| `detail` or `d`| Toggle Detail View | Opens / closes behind-the-tap telemetry grid |
+| `alert` | Simulate Outage | Toggles between nominal `ALL CLEAR` and alert `UH OH` |
+| `day` | Switch to Day Palette | Renders warm earth / loam / sun palette |
+| `night` | Switch to Night Palette | Renders low-glare obsidian / neon mint palette |
+| `sleep` | Enter Standby | Display powers down; wakes via 450ms double-tap |
+| `help` | Show Commands | Prints full diagnostic help menu |

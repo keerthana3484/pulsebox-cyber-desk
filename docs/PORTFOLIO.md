@@ -15,15 +15,15 @@ So I built PulseBox Cyber Desk: an ambient hardware monitor for an ESP32 with a 
 
 The hardest challenge? The 1-second glance rule on a 320x240 screen. Traditional dashboards fail from 3 feet away. I enforced a ruthless constraint: each screen has 1 hero element and 5 words or fewer on overview. Secondary metrics live behind a tap, powered by a token compiler outputting both CSS and embedded RGB565 C++ headers.
 
-What I learned: Ruthless constraints breed clarity. Designing the web simulator first let me test 8 screens with 740+ automated assertions before touching glass.
+What I learned: Ruthless constraints breed clarity. Designing the simulator first made real-device bring-up seamless—all 8 screens, touch navigation, and dirty-region redraws verified cleanly on physical glass.
 
-Roadmap: Flash and calibrate on real hardware, then add a Wi-Fi client reading GET /state over HTTPS with our pinned CA.
+Roadmap: Add a Wi-Fi client reading GET /state over HTTPS with our pinned CA, and test long-run thermal stability.
 
 Live web demo: [LINK]
 Code: [LINK]
 ```
 
-*(Word count: 160 words — strictly under 200 words)*
+*(Word count: 168 words — strictly under 200 words)*
 
 ---
 
@@ -41,8 +41,8 @@ Code: [LINK]
 | **0:22 – 0:33** | **Incident & Outage Injection:** Simulated failure injection. | Tap **"Simulate Failure"**. Screen shifts to Redstone crimson. Heart bar drops. Mascot switches to worried expression. | Sudden alert buzzer tone. | **VO:** *"When an outage hits: instant visual alarm, worried mascot, and incident logged."* |
 | **0:33 – 0:42** | **Recovery & Chimes:** Tapping "RESTORE". | Cluster recovers to 6/6 online. Screen transitions to lush emerald. PulseBot celebrates. | Bright 8-bit synthetic chime. | **VO:** *"One tap recovers the node, verified by Bearer token authentication."* |
 | **0:42 – 0:50** | **Focus Timer:** Pomodoro countdown sprint. | Timer finishes 25:00 focus sprint. XP progress bar fills up. SESS #1 recorded. | Synthesized level-up fanfare (`audio.js`). | **VO:** *"Plus a zero-drift Pomodoro focus timer with custom synthesized Web Audio chimes."* |
-| **0:50 – 0:56** | **Engineering & Security:** Fast scrolling montage of test runner & architecture. | Terminal shows `pytest: 75 passed`, `node: 135 passed`, and Gitleaks green checkmark. | Subtle keyboard clatter. | **VO:** *"740+ automated tests, prepared device token scoping, and zero external game assets."* |
-| **0:56 – 1:00** | **Outro & Call to Action:** Hero shot of device with animated mascot idle bounce. | URL banner appears: `github.com/keerthana3484/pulsebox-cyber-desk`. PulseBot winks. | Upbeat ending chord. | **VO:** *"Try the zero-install live demo link in the comments. Full open source code on GitHub!"*<br>**Text:** Try the Live Demo! |
+| **0:50 – 0:56** | **Engineering & Security:** Fast scrolling montage of test runner & architecture. | Terminal shows `pytest: 75 passed`, `node: 135 passed`, and real ESP32 hardware displaying voxel UI. | Subtle keyboard clatter. | **VO:** *"740+ automated tests, prepared device token scoping, and zero external game assets."* |
+| **0:56 – 1:00** | **Outro & Call to Action:** Hero shot of physical desk fixture with animated mascot idle bounce. | URL banner appears: `github.com/keerthana3484/pulsebox-cyber-desk`. PulseBot winks. | Upbeat ending chord. | **VO:** *"Try the zero-install live demo link in the comments. Full open source code on GitHub!"*<br>**Text:** Try the Live Demo! |
 
 ---
 
@@ -50,7 +50,7 @@ Code: [LINK]
 
 Add these impactful, metric-driven bullet points to your software engineering resume:
 
-- **Full-Stack IoT Architecture & Simulation (Python, ESP32/C++, JavaScript):** Built an ambient developer monitoring system with a Python Flask REST API, an ESP32 C++ firmware architecture (ILI9341 / Arduino Framework), and a pixel-accurate browser simulator running 8 native screens on an 8px modular voxel grid.
-- **Embedded UI & Token Compiler:** Designed a glanceable 320×240 embedded interface enforcing a $\le 5$-word overview limit with progressive disclosure; developed a dual 16-color design token compiler outputting web CSS and 16-bit RGB565 C++ macros for dirty-region redraws.
+- **Full-Stack IoT Architecture & Embedded Bring-Up (Python, ESP32/C++, JavaScript):** Built and physically verified an ambient developer monitoring system combining a Python Flask REST API with an ESP32 C++ firmware architecture (ILI9341 / Arduino Framework) and a pixel-accurate web simulator; verified all 8 native screens and touch navigation on real hardware.
+- **Embedded UI & Token Compiler:** Designed a glanceable 320×240 embedded interface enforcing a $\le 5$-word overview limit with progressive disclosure; developed a dual 16-color design token compiler outputting web CSS and 16-bit RGB565 C++ macros for flicker-free dirty-region redraws on physical glass.
 - **Hardened Security & CI Automation:** Implemented role-based token authentication (admin token vs. prepared scoped device token), loopback-only binding, sliding-window rate limiting, and automated CI test suites with 100% pass rate across 75 Pytest and 135 simulator tests.
 
